@@ -1,0 +1,25 @@
+# NPMモジュール
+node_modules/
+
+# JSDocの出力先
+out/
+
+# 設定ファイル
+*.iml
+.idea/
+.settings/
+.project
+.sublime-project
+.tern-project
+
+# その他
+.git
+.setenv
+.command-memo
+*.log
+.DS_Store
+Thumbs.db
+doc/
+public/dev/
+public/dist/
+upload/
