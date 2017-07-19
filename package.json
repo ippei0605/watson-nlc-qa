@@ -1,0 +1,17 @@
+{
+  "name": "watson-nlc-qa",
+  "version": "0.0.2",
+  "description": "Watson NLC Q&A Model",
+  "author": "Ippei SUZUKI",
+  "license": "MIT",
+  "scripts": {
+    "doc": "jsdoc -c jsdoc-conf.json *.js"
+  },
+  "dependencies": {
+    "cloudant": "~1.8.0",
+    "watson-developer-cloud": "~2.34.0"
+  },
+  "devDependencies": {
+    "jsdoc": "~3.5.3"
+  }
+}

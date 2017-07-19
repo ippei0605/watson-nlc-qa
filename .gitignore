@@ -1,0 +1,17 @@
+# NPMモジュール
+node_modules/
+
+# JSDocの出力先
+out/
+
+# 設定ファイル
+*.iml
+.idea/
+.settings/
+.project
+
+# その他
+.setenv
+.command-memo
+public/dist/
+upload/
