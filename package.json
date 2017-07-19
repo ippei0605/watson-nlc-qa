@@ -3,7 +3,9 @@
   "version": "0.0.3",
   "description": "Watson NLC Q&A Model",
   "author": "Ippei SUZUKI",
+  "homepage": "https://github.com/ippei0605/watson-nlc-qa",
   "license": "MIT",
+  "main": "./index",
   "scripts": {
     "doc": "jsdoc -c jsdoc-conf.json *.js"
   },

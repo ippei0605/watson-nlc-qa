@@ -169,6 +169,7 @@ class QaModel {
     /**
      * データベースを作成する。
      * @param callback
+     * @see {@link https://github.com/cloudant-labs/cloudant-nano#nanodbcreatename-callback}
      */
     createDatabase(callback) {
         // データベースの存在をチェックする。
@@ -190,6 +191,7 @@ class QaModel {
 
     /**
      * 設計文書を登録する。
+     * @see {@link https://github.com/cloudant-labs/cloudant-nano#dbbulkdocs-params-callback}
      */
     insertDesignDocument() {
         const doc = {
@@ -213,7 +215,8 @@ class QaModel {
     /**
      * データを登録する。
      * @param data {object} データ
-     */
+     * @see {@link https://github.com/cloudant-labs/cloudant-nano#dbinsertdoc-params-callback}
+        */
     insertDocuments(data) {
         this.db.bulk(data, (err) => {
             if (err) {
