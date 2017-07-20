@@ -261,7 +261,7 @@ function gerErrorMessage(err) {
     console.log('error:', err);
     return {
         "class_name": "",
-        "message": "エラーが発生しました。 " + err.error + " (code=" + err.code + ")",
+        "message": "エラーが発生しました。 " + err.error + " (code=" + err.statusCode + ")",
         "confidence": 0
     };
 }
