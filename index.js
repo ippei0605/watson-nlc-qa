@@ -8,7 +8,7 @@
 
 // モジュールを読込む。
 const
-    cloudant = require('cloudant'),
+    Cloudant = require('cloudant'),
     watson = require('watson-developer-cloud');
 
 class QaModel {
@@ -27,18 +27,13 @@ class QaModel {
          */
         this.nlc = new watson.NaturalLanguageClassifierV1(nlcCreds);
 
-        /**
-         * Classifier ID
-         * @type {string}
-         */
-        this.classifierId;
         this.setClassifierId(classifierId);
 
         /**
          * Cloudant NoSQL DB サービス
          * @type {Cloudant}
          */
-        this.cloudant = new cloudant(cloudantCreds.url);
+        this.cloudant = new Cloudant(cloudantCreds.url);
 
         /**
          * データベース名
@@ -60,6 +55,10 @@ class QaModel {
      */
     setClassifierId(classifierId) {
         if (classifierId) {
+            /**
+             * Classifier ID
+             * @type {string}
+             */
             this.classifierId = classifierId;
         } else {
             this.nlc.list({}, (err, value) => {
@@ -115,39 +114,31 @@ class QaModel {
      * @see {@link https://github.com/watson-developer-cloud/node-sdk#natural-language-classifier}
      */
     ask(text, callback) {
-        if (this.classifierId) {
-            this.nlc.classify({
-                "text": text,
-                "classifier_id": this.classifierId
-            }, (err, response) => {
-                if (err) {
-                    callback(gerErrorMessage(err));
-                } else {
-                    let topClass = response.classes[0];
-                    getAnswer(this.db, topClass.class_name, topClass.confidence, callback);
-                }
-            });
-        } else {
-            console.log('error: classifier_id=%s', this.classifierId);
-            callback({
-                "class_name": "",
-                "message": "Classifier ID が設定されていません。",
-                "confidence": 0
-            });
-        }
+        this.nlc.classify({
+            "text": text,
+            "classifier_id": this.classifierId
+        }, (err, response) => {
+            if (err) {
+                callback(gerErrorMessage(err));
+            } else {
+                let topClass = response.classes[0];
+                getAnswer(this.db, topClass.class_name, topClass.confidence, callback);
+            }
+        });
     }
 
     /**
      * NLC の Classifier を作成する。
      * @param file {ReadStream} トレーニングファイル (CSV形式)
-     * @param forceMode {boolean} true=Classifier を作成する, false=Classifierが一つ以上ある場合は作成しない
+     * @param mode {boolean} true=Classifier を作成する, false=Classifierが一つ以上ある場合は作成しない
+     * @param callback {function} コールバック
      */
-    createClassifier(file, forceMode) {
+    createClassifier(file, mode, callback) {
         this.nlc.list({}, (err, response) => {
             if (err) {
                 console.log('error:', err);
             } else {
-                if (forceMode || response.classifiers.length <= 0) {
+                if (mode || response.classifiers.length <= 0) {
                     const params = {
                         "language": "ja",
                         "name": "classifier",
@@ -159,10 +150,13 @@ class QaModel {
                         } else {
                             console.log('NLC の Classifier を作成しました。(学習中)', response);
                         }
+                        callback(response);
                     });
+                } else {
+                    console.log('Classifier は既に存在しているため作成しません。');
+                    callback(response);
                 }
             }
-
         });
     }
 
@@ -173,7 +167,7 @@ class QaModel {
      */
     createDatabase(callback) {
         // データベースの存在をチェックする。
-        this.cloudant.db.get(this.dbName, (err, body) => {
+        this.cloudant.db.get(this.dbName, (err) => {
             if (err && err.error === 'not_found') {
                 this.cloudant.db.create(this.dbName, (err) => {
                     if (err) {
@@ -181,10 +175,12 @@ class QaModel {
                     } else {
                         console.log('データベース[%s]を作成しました。', this.dbName);
                         this.db = this.cloudant.db.use(this.dbName);
-                        this.insertDesignDocument();
-                        callback();
                     }
+                    callback();
                 });
+            } else {
+                console.log('データベース[%s]は既に存在しています。', this.dbName);
+                callback();
             }
         });
     }
@@ -193,7 +189,7 @@ class QaModel {
      * 設計文書を登録する。
      * @see {@link https://github.com/cloudant-labs/cloudant-nano#dbbulkdocs-params-callback}
      */
-    insertDesignDocument() {
+    insertDesignDocument(callback) {
         const doc = {
             "_id": "_design/answers",
             "views": {
@@ -209,15 +205,17 @@ class QaModel {
                 console.log('設計文書[%s]を登録しました。', doc._id);
                 console.log(JSON.stringify(doc, undefined, 2));
             }
+            callback();
         });
     }
 
     /**
      * データを登録する。
      * @param data {object} データ
+     * @param callback {function} コールバック
      * @see {@link https://github.com/cloudant-labs/cloudant-nano#dbinsertdoc-params-callback}
-        */
-    insertDocuments(data) {
+     */
+    insertDocuments(data, callback) {
         this.db.bulk(data, (err) => {
             if (err) {
                 console.log(err);
@@ -225,6 +223,7 @@ class QaModel {
                 console.log('文書を登録しました。');
                 console.log(JSON.stringify(data, undefined, 2));
             }
+            callback();
         });
     }
 }
@@ -232,7 +231,7 @@ class QaModel {
 module.exports = QaModel;
 
 /**
- * 回答を作成して、コールバックする。
+ * 回答を取得する。
  * @param db {string} データベース
  * @param class_name {string} クラス名
  * @param confidence {number} 確度
@@ -259,9 +258,10 @@ function getAnswer(db, class_name, confidence, callback) {
  */
 function gerErrorMessage(err) {
     console.log('error:', err);
+    const code = err.code || err.statusCode;
     return {
         "class_name": "",
-        "message": "エラーが発生しました。 " + err.error + " (code=" + err.statusCode + ")",
+        "message": "エラーが発生しました。 " + err.error + " (code=" + code + ")",
         "confidence": 0
     };
 }

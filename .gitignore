@@ -1,12 +1,14 @@
 # NPMモジュール
 node_modules/
 
-# JSDocの出力先
+# JSDoc の出力先
 out/
+
+# istanbul の出力先
+coverage/
 
 # 設定ファイル
 *.iml
-.idea/
 .settings/
 .project
 
