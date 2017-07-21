@@ -9,4 +9,31 @@
 $ npm install watson-nlc-qa
 ```
 
-## 
+```javascript
+
+const qa = new QaModel(nlcCreds, '', cloudantCreds, 'answer');
+```
+
+nlcCreds
+```json
+{
+    "url": "{url}",
+    "username": "{username}",
+    "password": "{password}"
+}
+```
+
+cloudantCreds
+
+```json
+{
+    "username": "{username}",
+    "password": "{password}",
+    "host", "{host}",
+    "port", 443,
+    "url": "{url}"
+}
+```
+
+
+##
