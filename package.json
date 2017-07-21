@@ -1,14 +1,14 @@
 {
   "name": "watson-nlc-qa",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Watson NLC Q&A Model",
   "author": "Ippei SUZUKI",
   "homepage": "https://github.com/ippei0605/watson-nlc-qa#readme",
   "license": "MIT",
   "main": "./index",
   "scripts": {
-    "doc": "jsdoc -c jsdoc-conf.json *.js",
-    "test": "mocha test/index",
+    "doc": "jsdoc -c jsdoc-conf.json *.js test/*.js",
+    "test": "mocha --timeout 10000 test/index",
     "cover": "istanbul cover _mocha"
   },
   "dependencies": {

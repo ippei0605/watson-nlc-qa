@@ -3,37 +3,169 @@
 [![NPM version](https://badge.fury.io/js/watson-nlc-qa.svg)](http://badge.fury.io/js/watson-nlc-qa)
 
 ## はじめに
+Q&A Chatbot を作成するためのモデルです。
+
+## システム要件
+次のサービスを使用してください。
+* Bluemix Cloudant NoSQL DB
+* Bluemix Watson Natural Language Classifier
 
 ## インストール
 ```
 $ npm install watson-nlc-qa
 ```
 
+## API リファレンス
+### QaModel(nlcCreds, classifierId, cloudantCreds, dbName)
+Q&A モデルを生成します。
 ```javascript
+const QaModel = require('watson-nlc-qa');
 
 const qa = new QaModel(nlcCreds, '', cloudantCreds, 'answer');
 ```
+* nlcCreds {object} Natural Language Classifier の接続情報
 
-nlcCreds
+    ```json
+    {
+        "url": "{url}",
+        "username": "{username}",
+        "password": "{password}"
+    }
+    ```
+* classifierId {string} Classifier ID、空文字の場合は最新の Classifier を選択します。
+* cloudantCreds {object} Cloudant NoSQL DB の接続情報
+
+    ```json
+    {
+        "username": "{username}",
+        "password": "{password}",
+        "host": "{host}",
+        "port": 443,
+        "url": "{url}"
+    }
+    ```
+* dbName {string} データベース名
+
+### qa.setClassifierId(classifierId)
+メンバーに Classifier ID をセットします。
+```javascript
+setClassifierId('359f3fx202-nlc-203641');
+```
+* classifierId {string} Classifier ID
+
+### qa.getAppSettings(callback)
+アプリケーションの設定値を取得します。
+```javascript
+qa.getAppSettings((value) => {
+    console.log(value);
+});
+```
+* callback {function} コールバック
+
+### qa.askClassName(text, callback)
+クラス名により回答を取得します。
+```javascript
+qa.askClassName('general_hello', (value) => {
+    console.log(value);
+});
+```
+* callback {function} コールバック
+* value {object} 回答
+
 ```json
 {
-    "url": "{url}",
-    "username": "{username}",
-    "password": "{password}"
+    "class_name": "general_hello",
+    "message": "こんにちは。私はワトソンです。",
+    "confidence": 0
 }
 ```
 
-cloudantCreds
-
-```json
-{
-    "username": "{username}",
-    "password": "{password}",
-    "host", "{host}",
-    "port", 443,
-    "url": "{url}"
-}
+### ask(text, callback)
+テキスト分類で回答を取得します。
+```javascript
+qa.ask('こんにちは', (value) => {
+    console.log(value);
+});
 ```
+* callback {function} コールバック
+* value {object} 回答 (上記)
 
+### qa.createClassifier(file, mode, [callback])
+Classifier を作成します。
 
-##
+```javascript
+qa.createClassifier(fs.createReadStream(__dirname + '/' + TRAINING_FILENAME));
+```
+* file {object} ファイルストリーム
+* mode {boolean} モード
+  - true: Classifier を作成する
+  - false: Classifierが一つ以上ある場合は作成しない
+* callback {function} コールバック
+
+### qa.createDatabase([callback])
+データベースを作成します。
+```javascript
+qa.createDatabase((result)=>{
+    console.log(result);
+});
+```
+* callback {function} コールバック
+
+### qa.insertDesignDocument([callback])
+データベースに設計文書を登録します。
+```javascript
+qa.insertDesignDocument((result)=>{
+    console.log(result);
+});
+```
+* callback {function} コールバック
+
+### qa.insertDocuments(data, [callback])
+データを登録します。
+```javascript
+qa.insertDocuments(data, (result) => {
+    console.log(result);
+});
+```
+* data {object} データ
+
+    ```json
+    {
+      "docs": [
+        {
+          "_id": "app_settings",
+          "name": "Watson Diet Trainer"
+        },
+        {
+          "_id": "general_hello",
+          "message": "こんにちは。私はワトソンです。",
+          "questions": [
+            "こんばんは。",
+            "はじめまして。",
+            "はじめまして。こんにちは。 ",
+            "こんにちは。",
+            "よろしくお願いします。",
+            "おはようございます。"
+          ]
+        }
+      ]
+    }
+    ```
+
+* callback {function} コールバック
+
+## Tips
+### データの初期登録
+データベース作成、設計文書登録、データ登録は個別にも実行できますが、次のようにすることでデータベース作成後に設計文書登録とデータ登録を実行できます。
+
+```javascript
+// データベースを作成する。
+qa.createDatabase(() => {
+    // 設計文書を作成する。
+    qa.insertDesignDocument();
+
+    // データを登録する。
+    const data = fs.readFileSync(__dirname + '/' + CONTENT_FILENAME).toString();
+    qa.insertDocuments(JSON.parse(data));
+});
+```

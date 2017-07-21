@@ -11,6 +11,7 @@ const
     Cloudant = require('cloudant'),
     watson = require('watson-developer-cloud');
 
+
 class QaModel {
     /**
      * コンストラクター
@@ -129,7 +130,7 @@ class QaModel {
 
     /**
      * NLC の Classifier を作成する。
-     * @param file {ReadStream} トレーニングファイル (CSV形式)
+     * @param file {object} トレーニングファイル (CSV形式)
      * @param mode {boolean} true=Classifier を作成する, false=Classifierが一つ以上ある場合は作成しない
      * @param callback {function} コールバック
      */
@@ -137,6 +138,7 @@ class QaModel {
         this.nlc.list({}, (err, response) => {
             if (err) {
                 console.log('error:', err);
+                execCallback(callback, {});
             } else {
                 if (mode || response.classifiers.length <= 0) {
                     const params = {
@@ -147,14 +149,15 @@ class QaModel {
                     this.nlc.create(params, (err, response) => {
                         if (err) {
                             console.log('error:', err);
+                            execCallback(callback, {});
                         } else {
                             console.log('NLC の Classifier を作成しました。(学習中)', response);
+                            execCallback(callback, response);
                         }
-                        callback(response);
                     });
                 } else {
                     console.log('Classifier は既に存在しているため作成しません。');
-                    callback(response);
+                    execCallback(callback, response);
                 }
             }
         });
@@ -163,31 +166,35 @@ class QaModel {
     /**
      * データベースを作成する。
      * @param callback
+     * @see {@link https://github.com/cloudant-labs/cloudant-nano#nanodbgetname-callback}
      * @see {@link https://github.com/cloudant-labs/cloudant-nano#nanodbcreatename-callback}
      */
     createDatabase(callback) {
         // データベースの存在をチェックする。
-        this.cloudant.db.get(this.dbName, (err) => {
+        this.cloudant.db.get(this.dbName, (err, body) => {
             if (err && err.error === 'not_found') {
-                this.cloudant.db.create(this.dbName, (err) => {
+                this.cloudant.db.create(this.dbName, (err, body) => {
                     if (err) {
                         console.log(err);
+                        execCallback(callback, {});
                     } else {
                         console.log('データベース[%s]を作成しました。', this.dbName);
                         this.db = this.cloudant.db.use(this.dbName);
+                        if (callback && typeof(callback) === "function") {
+                            execCallback(callback, body);
+                        }
                     }
-                    callback();
                 });
             } else {
                 console.log('データベース[%s]は既に存在しています。', this.dbName);
-                callback();
+                execCallback(callback, body);
             }
         });
     }
 
     /**
      * 設計文書を登録する。
-     * @see {@link https://github.com/cloudant-labs/cloudant-nano#dbbulkdocs-params-callback}
+     * @see {@link https://github.com/cloudant-labs/cloudant-nano#dbinsertdoc-params-callback}
      */
     insertDesignDocument(callback) {
         const doc = {
@@ -198,14 +205,17 @@ class QaModel {
                 }
             }
         };
-        this.db.insert(doc, (err) => {
+        this.db.insert(doc, (err, body) => {
             if (err) {
                 console.log(err);
+                execCallback(callback, {});
             } else {
                 console.log('設計文書[%s]を登録しました。', doc._id);
+                console.log('----------');
                 console.log(JSON.stringify(doc, undefined, 2));
+                console.log('----------');
+                execCallback(callback, body);
             }
-            callback();
         });
     }
 
@@ -213,17 +223,20 @@ class QaModel {
      * データを登録する。
      * @param data {object} データ
      * @param callback {function} コールバック
-     * @see {@link https://github.com/cloudant-labs/cloudant-nano#dbinsertdoc-params-callback}
+     * @see {@link https://github.com/cloudant-labs/cloudant-nano#dbbulkdocs-params-callback}
      */
     insertDocuments(data, callback) {
-        this.db.bulk(data, (err) => {
+        this.db.bulk(data, (err, body) => {
             if (err) {
                 console.log(err);
+                execCallback(callback, {});
             } else {
                 console.log('文書を登録しました。');
+                console.log('----------');
                 console.log(JSON.stringify(data, undefined, 2));
+                console.log('----------');
+                execCallback(callback, body);
             }
-            callback();
         });
     }
 }
@@ -264,4 +277,15 @@ function gerErrorMessage(err) {
         "message": "エラーが発生しました。 " + err.error + " (code=" + code + ")",
         "confidence": 0
     };
+}
+
+/**
+ * コールバックをチェックして実行する。
+ * @param callback
+ * @param value
+ */
+function execCallback(callback, value) {
+    if (callback && typeof(callback) === "function") {
+        callback(value);
+    }
 }

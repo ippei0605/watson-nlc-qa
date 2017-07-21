@@ -1,3 +1,9 @@
+/**
+ * @file テストケース
+ * - テスト自動化に伴い、Bluemix サービス接続情報を定義している。Travis CIのテスト後に接続情報を更新してこの値を使用できなくすること。
+ * - Natural Language Classifier # create は ¥300/call なので呼ばない。
+ */
+
 'use strict';
 
 // モジュールを読込む。
@@ -95,14 +101,12 @@ describe('QaModel', () => {
         it('Watson NLC に尋ねる。存在しない Classifier を指定', (done) => {
             qaNoClassifierId.ask('こんにちは', (doc) => {
                 console.log('doc:', doc);
-
                 assert.equal('', doc.class_name);
                 assert(doc.message);
                 assert.equal(0, doc.confidence);
                 done();
             });
         });
-
     });
 
     describe('createClassifier', () => {
@@ -155,7 +159,7 @@ describe('QaModel', () => {
                     if (err) {
                         console.log('error', err);
                     } else {
-                        console.log('データベース「no-database」を削除しました。');
+                        console.log('データベース「temp」を削除しました。');
                     }
                     done();
                 });
