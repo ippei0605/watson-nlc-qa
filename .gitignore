@@ -8,6 +8,7 @@ out/
 coverage/
 
 # 設定ファイル
+.idea/
 *.iml
 .settings/
 .project
