@@ -8,8 +8,7 @@
   "main": "./index",
   "scripts": {
     "doc": "jsdoc -c jsdoc-conf.json *.js test/*.js",
-    "test": "mocha",
-    "cover": "istanbul cover _mocha",
+    "test": "istanbul cover _mocha",
     "codecov": "codecov -t 8ce0aa09-70e6-461d-8640-966697fd294a"
   },
   "dependencies": {
