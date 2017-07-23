@@ -9,8 +9,17 @@
 // モジュールを読込む。
 const
     Cloudant = require('cloudant'),
-    watson = require('watson-developer-cloud');
+    Nlc = require('watson-developer-cloud/natural-language-classifier/v1');
 
+// 設計文書テンプレート
+const DESIGN_DOC = {
+    "_id": "_design/answers",
+    "views": {
+        "list": {
+            "map": "function (doc) {\n    if (doc._id !== 'app_settings') {\n        var row = {\n            \"_id\": doc._id,\n            \"_rev\": doc._rev,\n            \"message\": doc.message,\n            \"questions\": doc.questions\n        };\n        emit(doc._id, row);\n    }\n}"
+        }
+    }
+};
 
 class QaModel {
     /**
@@ -26,7 +35,7 @@ class QaModel {
          * Watson Natural Language Classifier サービス
          * @type {NaturalLanguageClassifierV1}
          */
-        this.nlc = new watson.NaturalLanguageClassifierV1(nlcCreds);
+        this.nlc = new Nlc(nlcCreds);
 
         this.setClassifierId(classifierId);
 
@@ -85,8 +94,23 @@ class QaModel {
     }
 
     /**
-     * アプリケーションの設定値を取得して、コールバックを実行する。
-     * @param {function} callback コールバック
+     * 回答
+     * @typedef {object} Answer
+     * @property {string} class_name クラス名
+     * @property {string} message メッセージ
+     * @property {number} confidence 確度
+     */
+
+    /**
+     * アプリケーションの設定値でコールバックする。
+     * @callback appSettingsCallback
+     * @param {object} value アプリケーションの設定値
+     * @property {string} name 名前
+     */
+
+    /**
+     * アプリケーションの設定値を取得する。
+     * @param callback {appSettingsCallback} コールバック
      */
     getAppSettings(callback) {
         this.db.get('app_settings', (err, doc) => {
@@ -100,18 +124,24 @@ class QaModel {
     }
 
     /**
-     * クラス名によりメッセージを取得する。
+     * クラス名により回答を取得する。
      * @param {string} text 質問
-     * @param callback {function} コールバック
+     * @param {answerCallback} callback コールバック
      */
     askClassName(text, callback) {
         getAnswer(this.db, text, 0, callback);
     }
 
     /**
-     * テキスト分類で回答を作成して、コールバックする。
-     * @param {string} text 質問
-     * @param callback {function} コールバック
+     * 回答でコールバックする。
+     * @callback answerCallback
+     * @param value {Answer} 回答
+     */
+
+    /**
+     * テキスト分類により回答を取得する。
+     * @param text {string} 質問
+     * @param callback {answerCallback} callback コールバック
      * @see {@link https://github.com/watson-developer-cloud/node-sdk#natural-language-classifier}
      */
     ask(text, callback) {
@@ -129,10 +159,16 @@ class QaModel {
     }
 
     /**
-     * NLC の Classifier を作成する。
+     * Classifier の作成結果でコールバックする。
+     * @callback createClassifierCallback
+     * @param value {object} Classifier の作成結果 (エラー時は {})
+     */
+
+    /**
+     * Natural Language Classifier の Classifier を作成する。
      * @param file {object} トレーニングファイル (CSV形式)
      * @param mode {boolean} true=Classifier を作成する, false=Classifierが一つ以上ある場合は作成しない
-     * @param callback {function} コールバック
+     * @param callback {createClassifierCallback} コールバック (任意)
      */
     createClassifier(file, mode, callback) {
         this.nlc.list({}, (err, response) => {
@@ -164,8 +200,14 @@ class QaModel {
     }
 
     /**
+     * Cloudant NoSQL DB の操作結果でコールバックする。
+     * @callback cloudantCallback
+     * @param value {object} Cloudant NoSQL DB の操作結果 (エラー時は {})
+     */
+
+    /**
      * データベースを作成する。
-     * @param callback
+     * @param callback {cloudantCallback} コールバック (任意)
      * @see {@link https://github.com/cloudant-labs/cloudant-nano#nanodbgetname-callback}
      * @see {@link https://github.com/cloudant-labs/cloudant-nano#nanodbcreatename-callback}
      */
@@ -194,25 +236,21 @@ class QaModel {
 
     /**
      * 設計文書を登録する。
+     * @param callback {cloudantCallback} コールバック (任意)
      * @see {@link https://github.com/cloudant-labs/cloudant-nano#dbinsertdoc-params-callback}
      */
-    insertDesignDocument(callback) {
-        const doc = {
-            "_id": "_design/answers",
-            "views": {
-                "list": {
-                    "map": "function (doc) {\n    if (doc._id !== 'app_settings') {\n        var row = {\n            \"_id\": doc._id,\n            \"_rev\": doc._rev,\n            \"message\": doc.message,\n            \"questions\": doc.questions\n        };\n        emit(doc._id, row);\n    }\n}"
-                }
-            }
-        };
-        this.db.insert(doc, (err, body) => {
+    insertDesignDocument(mapFunction, callback) {
+        if (mapFunction) {
+            DESIGN_DOC.views.list.map = mapFunction;
+        }
+        this.db.insert(DESIGN_DOC, (err, body) => {
             if (err) {
                 console.log(err);
                 execCallback(callback, {});
             } else {
-                console.log('設計文書[%s]を登録しました。', doc._id);
+                console.log('設計文書[%s]を登録しました。', DESIGN_DOC._id);
                 console.log('----------');
-                console.log(JSON.stringify(doc, undefined, 2));
+                console.log(JSON.stringify(DESIGN_DOC, undefined, 2));
                 console.log('----------');
                 execCallback(callback, body);
             }
@@ -222,7 +260,7 @@ class QaModel {
     /**
      * データを登録する。
      * @param data {object} データ
-     * @param callback {function} コールバック
+     * @param callback {cloudantCallback} コールバック(任意)
      * @see {@link https://github.com/cloudant-labs/cloudant-nano#dbbulkdocs-params-callback}
      */
     insertDocuments(data, callback) {
@@ -241,16 +279,19 @@ class QaModel {
     }
 }
 
-module.exports = QaModel;
+module
+    .exports = QaModel;
 
 /**
  * 回答を取得する。
  * @param db {string} データベース
  * @param class_name {string} クラス名
  * @param confidence {number} 確度
- * @param callback {function} コールバック
+ * @param callback {answerCallback} コールバック
  */
-function getAnswer(db, class_name, confidence, callback) {
+function
+
+getAnswer(db, class_name, confidence, callback) {
     db.get(class_name, (err, body) => {
         if (err) {
             callback(gerErrorMessage(err));
@@ -267,9 +308,11 @@ function getAnswer(db, class_name, confidence, callback) {
 /**
  * エラーの回答を返す。
  * @param err {object} エラー
- * @returns {{class_name: string, message: string, confidence: number}}
+ * @return {Answer} 回答
  */
-function gerErrorMessage(err) {
+function
+
+gerErrorMessage(err) {
     console.log('error:', err);
     const code = err.code || err.statusCode;
     return {
@@ -280,12 +323,21 @@ function gerErrorMessage(err) {
 }
 
 /**
- * コールバックをチェックして実行する。
- * @param callback
- * @param value
+ * 引数でコールバックする。
+ * @callback callback
+ * @param value {object} 引数
  */
-function execCallback(callback, value) {
+
+/**
+ * コールバックをチェックして実行する。
+ * @param callback {callback} コールバック
+ * @param value {object} コールバックの引数
+ */
+function
+
+execCallback(callback, value) {
     if (callback && typeof(callback) === "function") {
         callback(value);
     }
 }
+

@@ -4,11 +4,14 @@
 
 ## はじめに
 Q&A Chatbot を作成するためのモデルです。
+* このモデルを使用して作成した Q&A Chatbot はこちらです。
+  - https://github.com/ippei0605/qa-chatbot
 
 ## システム要件
 次のサービスを使用してください。
-* Bluemix Cloudant NoSQL DB
-* Bluemix Watson Natural Language Classifier
+* IBM Bluemix
+  - [Cloudant NoSQL DB](https://console.bluemix.net/catalog/services/cloudant-nosql-db?locale=ja)
+  - [Watson Natural Language Classifier](https://console.bluemix.net/catalog/services/natural-language-classifier?locale=ja)
 
 ## インストール
 ```
@@ -111,14 +114,41 @@ qa.createDatabase((result)=>{
 ```
 * callback {function} コールバック
 
-### qa.insertDesignDocument([callback])
+### qa.insertDesignDocument(mapFunction, [callback])
 データベースに設計文書を登録します。
 ```javascript
-qa.insertDesignDocument((result)=>{
+qa.insertDesignDocument('', (result) => {
     console.log(result);
 });
 ```
 * callback {function} コールバック
+
+* デフォルトの設計文書
+    ```json
+    {
+        "_id": "_design/answers",
+        "views": {
+            "list": {
+                "map": "{デフォルトのマップファンクション}"
+            }
+        }
+    }
+    ```
+
+* デフォルトのマップファンクション
+    ```javascript
+    function (doc) {
+        if (doc._id !== 'app_settings') {
+            var row = {
+                "_id": doc._id,
+                "_rev": doc._rev,
+                "message": doc.message,
+                "questions": doc.questions
+            };
+            emit(doc._id, row);
+        }
+    }
+    ```
 
 ### qa.insertDocuments(data, [callback])
 データを登録します。

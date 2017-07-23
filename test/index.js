@@ -120,7 +120,7 @@ describe('QaModel', () => {
 
     describe('DBなしの状態', () => {
         it('insertDesignDocument', (done) => {
-            qaNoDb.insertDesignDocument(() => {
+            qaNoDb.insertDesignDocument('', () => {
                 done();
             });
         });
@@ -145,8 +145,9 @@ describe('QaModel', () => {
     });
 
     describe('DBありの状態', () => {
-        it('insertDesignDocument', (done) => {
-            qaNoDb.insertDesignDocument(() => {
+        it('insertDesignDocument, mapFunction', (done) => {
+            const mapFunction = "function (doc) {\n    if (doc._id !== 'app_settings') {\n        var row = {\n            \"_id\": doc._id,\n            \"_rev\": doc._rev,\n            \"message\": doc.message,\n            \"questions\": doc.questions\n        };\n        emit(doc._id, row);\n    }\n}";
+            qaNoDb.insertDesignDocument(mapFunction, () => {
                 done();
             });
         });

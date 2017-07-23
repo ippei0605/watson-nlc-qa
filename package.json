@@ -8,7 +8,7 @@
   "main": "./index",
   "scripts": {
     "doc": "jsdoc -c jsdoc-conf.json *.js test/*.js",
-    "test": "mocha --timeout 10000 test/index",
+    "test": "mocha",
     "cover": "istanbul cover _mocha"
   },
   "dependencies": {
@@ -17,7 +17,8 @@
   },
   "devDependencies": {
     "chai": "~4.1.0",
-    "istanbul": "^0.4.5",
+    "codecov": "^2.2.0",
+    "istanbul": "~0.4.5",
     "jsdoc": "~3.5.3",
     "mocha": "~3.4.2"
   }
