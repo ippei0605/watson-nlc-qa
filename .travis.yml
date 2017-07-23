@@ -2,4 +2,5 @@ language: node_js
 node_js:
   - "7"
 after_success:
-  - cover
+  - istanbul cover _mocha --report lcovonly -- -R spec
+  - codecov

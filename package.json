@@ -9,7 +9,7 @@
   "scripts": {
     "doc": "jsdoc -c jsdoc-conf.json *.js test/*.js",
     "test": "mocha",
-    "cover": "istanbul cover _mocha --report lcovonly -- -R spec && codecov"
+    "cover": "istanbul cover _mocha"
   },
   "dependencies": {
     "cloudant": "~1.8.0",

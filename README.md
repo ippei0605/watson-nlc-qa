@@ -1,6 +1,7 @@
 # watson-nlc-qa
 [![Build Status](https://travis-ci.org/ippei0605/watson-nlc-qa.svg?branch=master)](https://travis-ci.org/ippei0605/watson-nlc-qa)
 [![NPM version](https://badge.fury.io/js/watson-nlc-qa.svg)](http://badge.fury.io/js/watson-nlc-qa)
+[![codecov](https://codecov.io/gh/ippei0605/watson-nlc-qa/branch/master/graph/badge.svg)](https://codecov.io/gh/ippei0605/watson-nlc-qa)
 
 ## はじめに
 Q&A Chatbot を作成するためのモデルです。
