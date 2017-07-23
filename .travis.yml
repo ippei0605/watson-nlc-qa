@@ -1,6 +1,6 @@
 language: node_js
 node_js:
   - "7"
-after_success:
+script:
   - istanbul cover _mocha --report lcovonly -- -R spec
-  - codecov
+  - codecov -t 8ce0aa09-70e6-461d-8640-966697fd294a
