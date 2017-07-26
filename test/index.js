@@ -45,9 +45,9 @@ const MAP_FUNCTION = `function (doc) {
 
 // Bluemix サービス接続情報
 const
-    nlcCreds = JSON.parse(process.env.NLC_CREDS),
-    errorNlcCreds = JSON.parse(process.env.ERROR_NLC_CREDS),
-    cloudantCreds = JSON.parse(process.env.CLOUDANT_CREDS);
+    nlcCreds = (process.env.NLC_CREDS),
+    errorNlcCreds = (process.env.ERROR_NLC_CREDS),
+    cloudantCreds = (process.env.CLOUDANT_CREDS);
 
 describe('QaModel', () => {
 
