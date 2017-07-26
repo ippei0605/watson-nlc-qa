@@ -9,17 +9,17 @@
   "scripts": {
     "doc": "jsdoc -c jsdoc-conf.json *.js test/*.js",
     "test": "istanbul cover _mocha",
-    "codecov": "codecov -t 8ce0aa09-70e6-461d-8640-966697fd294a"
+    "codecov": "codecov -t $CODECOV_TOKEN"
   },
   "dependencies": {
-    "cloudant": "~1.8.0",
-    "watson-developer-cloud": "~2.34.0"
+    "cloudant": "^1.8.0",
+    "request": "^2.81.0"
   },
   "devDependencies": {
-    "chai": "~4.1.0",
-    "codecov": "~2.2.0",
-    "istanbul": "~0.4.5",
-    "jsdoc": "~3.5.3",
-    "mocha": "~3.4.2"
+    "chai": "^4.1.0",
+    "codecov": "^2.2.0",
+    "istanbul": "^0.4.5",
+    "jsdoc": "^3.5.3",
+    "mocha": "^3.4.2"
   }
 }

@@ -8,36 +8,179 @@
 
 // モジュールを読込む。
 const
-    Cloudant = require('cloudant'),
-    Nlc = require('watson-developer-cloud/natural-language-classifier/v1');
+    request = require('request'),
+    Cloudant = require('cloudant');
+
+// マップファンクション
+const MAP_FUNCTION = `function (doc) {
+    if (doc._id !== 'app_settings') {
+        var row = {
+            "_id": doc._id,
+            "_rev": doc._rev,
+            "message": doc.message,
+            "questions": doc.questions
+        };
+        emit(doc._id, row);
+    }
+}`;
 
 // 設計文書テンプレート
 const DESIGN_DOC = {
     "_id": "_design/answers",
     "views": {
         "list": {
-            "map": "function (doc) {\n    if (doc._id !== 'app_settings') {\n        var row = {\n            \"_id\": doc._id,\n            \"_rev\": doc._rev,\n            \"message\": doc.message,\n            \"questions\": doc.questions\n        };\n        emit(doc._id, row);\n    }\n}"
+            "map": MAP_FUNCTION
         }
     }
+};
+
+// コールバックがあれば実行する。
+const execCallback = (callback, value) => {
+    if (callback && typeof(callback) === "function") {
+        callback(value);
+    }
+};
+
+// エラーの回答を返す。
+const gerErrorMessage = (err) => {
+    const code = err.code || err.statusCode;
+    return {
+        "class_name": "",
+        "message": "エラーが発生しました。 " + err.error + " (code=" + code + ")",
+        "confidence": 0
+    };
+};
+
+// 回答を取得する。
+const getAnswer = (db, class_name, confidence, callback) => {
+    db.get(class_name, (error, body) => {
+        if (error) {
+            callback(gerErrorMessage(error));
+        } else {
+            callback({
+                "class_name": body._id,
+                "message": body.message,
+                "confidence": confidence
+            });
+        }
+    });
+};
+
+// NLC の Classifier 一覧を取得する。
+const listClassifier = (nlcCreds, callback) => {
+    const list = {
+        "method": "GET",
+        "url": `${nlcCreds.url}/v1/classifiers/`,
+        "auth": {
+            "username": nlcCreds.username,
+            "password": nlcCreds.password,
+        },
+        "headers": {
+            "Content-Type": "application/json"
+        },
+        "json": true,
+    };
+    request(list, (error, response, body) => {
+        if (!error && 200 === response.statusCode) {
+            callback(body.classifiers);
+        } else {
+            console.log('error:', body);
+            callback([]);
+        }
+    });
+};
+
+// NLC の Classifier をする。
+const createClassifier = (nlcCreds, csvFile, metadata, callback) => {
+    const create = {
+        "method": "POST",
+        "url": `${nlcCreds.url}/v1/classifiers`,
+        "auth": {
+            "username": nlcCreds.username,
+            "password": nlcCreds.password,
+        },
+        "headers": {
+            "Content-Type": "application/json"
+        },
+        "json": true,
+        "formData": {
+            "training_data": csvFile,
+            "training_metadata": JSON.stringify(metadata)
+        }
+    };
+    request(create, (error, response, body) => {
+        if (!error && 200 === response.statusCode) {
+            console.log('NLC の Classifier を作成しました。(学習中)', body);
+        } else {
+            console.log('error:', body);
+        }
+        callback(body);
+    });
+};
+
+// NLC の classify を実行する。
+const classify = (nlcCreds, classifierId, db, text, callback) => {
+    const classify = {
+        "method": "POST",
+        "url": `${nlcCreds.url}/v1/classifiers/${classifierId}/classify`,
+        "auth": {
+            "username": nlcCreds.username,
+            "password": nlcCreds.password,
+        },
+        "headers": {
+            "Content-Type": "application/json"
+        },
+        "json": true,
+        "body": {
+            "text": text
+        }
+    };
+    request(classify, (error, response, body) => {
+        if (!error && 200 === response.statusCode) {
+            const topClass = body.classes[0];
+            getAnswer(db, topClass.class_name, topClass.confidence, callback);
+        } else {
+            console.log('error:', body);
+            callback(gerErrorMessage(body));
+        }
+    });
+};
+
+// 最新の Claccifier ID を取得する。(取得できない場合は空文字)
+const getLatestClassifierId = (nlcCreds, callback) => {
+    listClassifier(nlcCreds, (classifiers) => {
+        if (classifiers.length > 0) {
+            classifiers.sort((a, b) => {
+                if (a.created > b.created) {
+                    return -1;
+                }
+                if (a.created < b.created) {
+                    return 1;
+                }
+                return 0;
+            });
+            callback(classifiers[0].classifier_id);
+        } else {
+            callback('');
+        }
+    });
 };
 
 class QaModel {
     /**
      * コンストラクター
      * @classdesc Q&A モデル
-     * @param nlcCreds {object} Watson Natural Language Classifier 接続情報
+     * @param nlcCreds {object} Watson Natural Language Classifier サービス資格情報
      * @param classifierId {string} Classifier ID
-     * @param cloudantCreds {object} Cloudant NoSQL DB 接続情報
+     * @param cloudantCreds {object} Cloudant NoSQL DB サービス資格情報
      * @param dbName {string} データベース名
      */
     constructor(nlcCreds, classifierId, cloudantCreds, dbName) {
         /**
-         * Watson Natural Language Classifier サービス
-         * @type {NaturalLanguageClassifierV1}
+         * Watson Natural Language Classifier サービス資格情報
+         * @type {Object}
          */
-        this.nlc = new Nlc(nlcCreds);
-
-        this.setClassifierId(classifierId);
+        this.nlcCreds = nlcCreds;
 
         /**
          * Cloudant NoSQL DB サービス
@@ -56,39 +199,16 @@ class QaModel {
          * @type {object}
          */
         this.db = this.cloudant.db.use(dbName);
-    }
 
-    /**
-     * Classifier Id をセットする。
-     * Classifier Id が未設定の場合は Natural Language Classifier サービス内の最新の Classifier Id をセットする。
-     * @param classifierId {string} Classifier Id
-     */
-    setClassifierId(classifierId) {
         if (classifierId) {
             /**
-             * Classifier ID
+             * NLC の Classifier ID
              * @type {string}
              */
             this.classifierId = classifierId;
         } else {
-            this.nlc.list({}, (err, value) => {
-                if (err) {
-                    console.log('error:', err);
-                } else {
-                    const classifiers = value.classifiers;
-                    if (classifiers.length > 0) {
-                        classifiers.sort((a, b) => {
-                            if (a.created > b.created) {
-                                return -1;
-                            }
-                            if (a.created < b.created) {
-                                return 1;
-                            }
-                            return 0;
-                        });
-                        this.classifierId = classifiers[0].classifier_id;
-                    }
-                }
+            getLatestClassifierId(nlcCreds, (latestClassifierId) => {
+                this.classifierId = latestClassifierId;
             });
         }
     }
@@ -124,19 +244,35 @@ class QaModel {
     }
 
     /**
-     * クラス名により回答を取得する。
-     * @param {string} text 質問
-     * @param {answerCallback} callback コールバック
-     */
-    askClassName(text, callback) {
-        getAnswer(this.db, text, 0, callback);
-    }
-
-    /**
      * 回答でコールバックする。
      * @callback answerCallback
      * @param value {Answer} 回答
      */
+
+    /**
+     * クラス分類により回答を取得する。
+     * @param text {string} 質問
+     * @param callback {answerCallback} コールバック
+     */
+    ask(text, callback) {
+        if (this.classifierId) {
+            classify(this.nlcCreds, this.classifierId, this.db, text, callback);
+        } else {
+            getLatestClassifierId(this.nlcCreds, (latestClassifierId) => {
+                this.classifierId = latestClassifierId;
+                classify(this.nlcCreds, this.classifierId, this.db, text, callback);
+            });
+        }
+    }
+
+    /**
+     * クラス名により回答を取得する。
+     * @param text {string} クラス名
+     * @param callback {answerCallback} コールバック
+     */
+    askClassName(text, callback) {
+        getAnswer(this.db, text, 0, callback);
+    }
 
     /**
      * テキスト分類により回答を取得する。
@@ -144,19 +280,6 @@ class QaModel {
      * @param callback {answerCallback} callback コールバック
      * @see {@link https://github.com/watson-developer-cloud/node-sdk#natural-language-classifier}
      */
-    ask(text, callback) {
-        this.nlc.classify({
-            "text": text,
-            "classifier_id": this.classifierId
-        }, (err, response) => {
-            if (err) {
-                callback(gerErrorMessage(err));
-            } else {
-                let topClass = response.classes[0];
-                getAnswer(this.db, topClass.class_name, topClass.confidence, callback);
-            }
-        });
-    }
 
     /**
      * Classifier の作成結果でコールバックする。
@@ -170,31 +293,15 @@ class QaModel {
      * @param mode {boolean} true=Classifier を作成する, false=Classifierが一つ以上ある場合は作成しない
      * @param callback {createClassifierCallback} コールバック (任意)
      */
-    createClassifier(file, mode, callback) {
-        this.nlc.list({}, (err, response) => {
-            if (err) {
-                console.log('error:', err);
-                execCallback(callback, {});
+    train(file, metadata, mode, callback) {
+        listClassifier(this.nlcCreds, (classifiers) => {
+            if (mode || classifiers.length <= 0) {
+                createClassifier(this.nlcCreds, file, metadata, (body) => {
+                    execCallback(callback, body);
+                });
             } else {
-                if (mode || response.classifiers.length <= 0) {
-                    const params = {
-                        "language": "ja",
-                        "name": "classifier",
-                        "training_data": file
-                    };
-                    this.nlc.create(params, (err, response) => {
-                        if (err) {
-                            console.log('error:', err);
-                            execCallback(callback, {});
-                        } else {
-                            console.log('NLC の Classifier を作成しました。(学習中)', response);
-                            execCallback(callback, response);
-                        }
-                    });
-                } else {
-                    console.log('Classifier は既に存在しているため作成しません。');
-                    execCallback(callback, response);
-                }
+                console.log('Classifier は既に存在しているため作成しません。');
+                execCallback(callback, classifiers);
             }
         });
     }
@@ -213,11 +320,11 @@ class QaModel {
      */
     createDatabase(callback) {
         // データベースの存在をチェックする。
-        this.cloudant.db.get(this.dbName, (err, body) => {
-            if (err && err.error === 'not_found') {
-                this.cloudant.db.create(this.dbName, (err, body) => {
-                    if (err) {
-                        console.log(err);
+        this.cloudant.db.get(this.dbName, (error, body) => {
+            if (error && error.error === 'not_found') {
+                this.cloudant.db.create(this.dbName, (error, body) => {
+                    if (error) {
+                        console.log(error);
                         execCallback(callback, {});
                     } else {
                         console.log('データベース[%s]を作成しました。', this.dbName);
@@ -235,7 +342,8 @@ class QaModel {
     }
 
     /**
-     * 設計文書を登録する。
+     * 設計文書を登録する。マップファンクションが未設定の場合はデフォルトのマップファンクションで登録する。
+     * @param mapFunction {string} マップファンクション (任意)
      * @param callback {cloudantCallback} コールバック (任意)
      * @see {@link https://github.com/cloudant-labs/cloudant-nano#dbinsertdoc-params-callback}
      */
@@ -243,9 +351,9 @@ class QaModel {
         if (mapFunction) {
             DESIGN_DOC.views.list.map = mapFunction;
         }
-        this.db.insert(DESIGN_DOC, (err, body) => {
-            if (err) {
-                console.log(err);
+        this.db.insert(DESIGN_DOC, (error, body) => {
+            if (error) {
+                console.log(error);
                 execCallback(callback, {});
             } else {
                 console.log('設計文書[%s]を登録しました。', DESIGN_DOC._id);
@@ -264,9 +372,9 @@ class QaModel {
      * @see {@link https://github.com/cloudant-labs/cloudant-nano#dbbulkdocs-params-callback}
      */
     insertDocuments(data, callback) {
-        this.db.bulk(data, (err, body) => {
-            if (err) {
-                console.log(err);
+        this.db.bulk(data, (error, body) => {
+            if (error) {
+                console.log(error);
                 execCallback(callback, {});
             } else {
                 console.log('文書を登録しました。');
@@ -279,65 +387,4 @@ class QaModel {
     }
 }
 
-module
-    .exports = QaModel;
-
-/**
- * 回答を取得する。
- * @param db {string} データベース
- * @param class_name {string} クラス名
- * @param confidence {number} 確度
- * @param callback {answerCallback} コールバック
- */
-function
-
-getAnswer(db, class_name, confidence, callback) {
-    db.get(class_name, (err, body) => {
-        if (err) {
-            callback(gerErrorMessage(err));
-        } else {
-            callback({
-                "class_name": body._id,
-                "message": body.message,
-                "confidence": confidence
-            });
-        }
-    });
-}
-
-/**
- * エラーの回答を返す。
- * @param err {object} エラー
- * @return {Answer} 回答
- */
-function
-
-gerErrorMessage(err) {
-    console.log('error:', err);
-    const code = err.code || err.statusCode;
-    return {
-        "class_name": "",
-        "message": "エラーが発生しました。 " + err.error + " (code=" + code + ")",
-        "confidence": 0
-    };
-}
-
-/**
- * 引数でコールバックする。
- * @callback callback
- * @param value {object} 引数
- */
-
-/**
- * コールバックをチェックして実行する。
- * @param callback {callback} コールバック
- * @param value {object} コールバックの引数
- */
-function
-
-execCallback(callback, value) {
-    if (callback && typeof(callback) === "function") {
-        callback(value);
-    }
-}
-
+module.exports = QaModel;

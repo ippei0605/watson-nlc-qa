@@ -2,4 +2,4 @@ language: node_js
 node_js:
   - "7"
 after_success:
-  - codecov -t 8ce0aa09-70e6-461d-8640-966697fd294a
+  - codecov -t $CODECOV_TOKEN

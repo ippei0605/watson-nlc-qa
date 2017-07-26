@@ -1,7 +1,11 @@
 /**
  * @file テストケース
- * - テスト自動化に伴い、Bluemix サービス接続情報を定義している。Travis CIのテスト後に接続情報を更新してこの値を使用できなくすること。
- * - Natural Language Classifier # create は ¥300/call なので呼ばない。
+ * - テスト実行のための前提条件
+ *   - 次の環境変数を設定すること。
+ *     - NLC_CREDS: Natural Language Classifier のサービス資格情報
+ *     - ERROR_NLC_CREDS: Natural Language Classifier のサービス資格情報 (パスワード変更してエラーとなるように設定)
+ *     - CLOUDANT_CREDS: Cloudant NoSQL DB のサービス資格情報
+ * - Natural Language Classifier # create は ¥300/call なのでテストしない。
  */
 
 'use strict';
@@ -11,7 +15,6 @@ const
     chai = require('chai'),
     Cloudant = require('cloudant'),
     fs = require('fs'),
-    watson = require('watson-developer-cloud'),
     QaModel = require("../index");
 
 const assert = chai.assert;
@@ -20,30 +23,37 @@ const assert = chai.assert;
 const CONTENT_FILENAME = 'answer.json';
 
 // トレーニングデータ
-const TRAINING_FILENAME = 'classifier.csv';
-
-// Bluemix サービス接続情報 (テスト後は接続情報を更新してこの値を使用できなくすること)
 const
-    nlcCreds = {
-        "url": "https://gateway.watsonplatform.net/natural-language-classifier/api",
-        "username": "45e073e3-0404-4aeb-ad1b-f1c584c326b2",
-        "password": "F6kH0E8sbQCd"
-    },
-    cloudantCreds = {
-        "username": "6c36d289-4ceb-4fef-b396-8266af0ab4b8-bluemix",
-        "password": "cf1cb274d196e18082dfef70cf4e1c567192896fb25ac4cd8c0b2f1dc5f7f410",
-        "host": "6c36d289-4ceb-4fef-b396-8266af0ab4b8-bluemix.cloudant.com",
-        "port": 443,
-        "url": "https://6c36d289-4ceb-4fef-b396-8266af0ab4b8-bluemix:cf1cb274d196e18082dfef70cf4e1c567192896fb25ac4cd8c0b2f1dc5f7f410@6c36d289-4ceb-4fef-b396-8266af0ab4b8-bluemix.cloudant.com"
+    TRAINING_CSV = fs.createReadStream(__dirname + '/classifier.csv'),
+    TRAINING_METADATA = {
+        "language": "ja",
+        "name": "My Classifier"
     };
 
+// マップファンクション
+const MAP_FUNCTION = `function (doc) {
+    if (doc._id !== 'app_settings') {
+        var row = {
+            "_id": doc._id,
+            "_rev": doc._rev,
+            "message": doc.message,
+            "questions": doc.questions
+        };
+        emit(doc._id, row);
+    }
+}`;
 
-const trainingFile = fs.createReadStream(__dirname + '/' + TRAINING_FILENAME);
+// Bluemix サービス接続情報
+const
+    nlcCreds = JSON.parse(process.env.NLC_CREDS),
+    errorNlcCreds = JSON.parse(process.env.ERROR_NLC_CREDS),
+    cloudantCreds = JSON.parse(process.env.CLOUDANT_CREDS);
 
 describe('QaModel', () => {
 
     const
         qa = new QaModel(nlcCreds, '', cloudantCreds, 'answer'),
+        qaNlcError = new QaModel(errorNlcCreds, '', cloudantCreds, 'answer'),
         qaNoClassifierId = new QaModel(nlcCreds, 'no-classifier', cloudantCreds, 'answer'),
         qaNoDb = new QaModel(nlcCreds, '', cloudantCreds, 'temp'),
         data = JSON.parse(fs.readFileSync(__dirname + '/' + CONTENT_FILENAME).toString());
@@ -100,7 +110,7 @@ describe('QaModel', () => {
 
         it('Watson NLC に尋ねる。存在しない Classifier を指定', (done) => {
             qaNoClassifierId.ask('こんにちは', (doc) => {
-                console.log('doc:', doc);
+                console.log('####doc:', doc);
                 assert.equal('', doc.class_name);
                 assert(doc.message);
                 assert.equal(0, doc.confidence);
@@ -109,9 +119,9 @@ describe('QaModel', () => {
         });
     });
 
-    describe('createClassifier', () => {
+    describe('train', () => {
         it('mode=false, cLassifier が存在するため作成しない', (done) => {
-            qa.createClassifier(trainingFile, false, (response) => {
+            qa.train(TRAINING_CSV, TRAINING_METADATA, false, (response) => {
                 console.log('response:', response);
                 done();
             });
@@ -146,8 +156,7 @@ describe('QaModel', () => {
 
     describe('DBありの状態', () => {
         it('insertDesignDocument, mapFunction', (done) => {
-            const mapFunction = "function (doc) {\n    if (doc._id !== 'app_settings') {\n        var row = {\n            \"_id\": doc._id,\n            \"_rev\": doc._rev,\n            \"message\": doc.message,\n            \"questions\": doc.questions\n        };\n        emit(doc._id, row);\n    }\n}";
-            qaNoDb.insertDesignDocument(mapFunction, () => {
+            qaNoDb.insertDesignDocument(MAP_FUNCTION, () => {
                 done();
             });
         });
