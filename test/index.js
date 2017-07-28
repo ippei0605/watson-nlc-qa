@@ -1,11 +1,13 @@
 /**
  * @file テストケース
  * - テスト実行のための前提条件
- *   - 次の環境変数を設定すること。
+ *   - 実行する環境において、次の環境変数を設定すること。 (Travis CI には設定済)
  *     - NLC_CREDS: Natural Language Classifier のサービス資格情報
  *     - ERROR_NLC_CREDS: Natural Language Classifier のサービス資格情報 (パスワード変更してエラーとなるように設定)
  *     - CLOUDANT_CREDS: Cloudant NoSQL DB のサービス資格情報
+ *   - Travis CI の場合は、Project の More options の settings で設定する。(JSONは値を'で括る。)
  * - Natural Language Classifier # create は ¥300/call なのでテストしない。
+ * - ローカル環境で codecov を実行する場合は、環境変数 CODECOV_TOKEN を設定すること。(Travis CI には設定済)
  */
 
 'use strict';
@@ -52,10 +54,10 @@ const
 describe('QaModel', () => {
 
     const
-        qa = new QaModel(nlcCreds, '', cloudantCreds, 'answer'),
-        qaNlcError = new QaModel(errorNlcCreds, '', cloudantCreds, 'answer'),
-        qaNoClassifierId = new QaModel(nlcCreds, 'no-classifier', cloudantCreds, 'answer'),
-        qaNoDb = new QaModel(nlcCreds, '', cloudantCreds, 'temp'),
+        qa = new QaModel(cloudantCreds, 'answer', nlcCreds),
+        qaNlcError = new QaModel(cloudantCreds, 'answer', errorNlcCreds),
+        qaNoClassifierId = new QaModel(cloudantCreds, 'answer', nlcCreds, 'no-classifier'),
+        qaNoDb = new QaModel(cloudantCreds, 'temp', nlcCreds),
         data = JSON.parse(fs.readFileSync(__dirname + '/' + CONTENT_FILENAME).toString());
 
     describe('getAppSettings', () => {
@@ -100,10 +102,19 @@ describe('QaModel', () => {
         it('Watson NLC に尋ねる。', (done) => {
             qa.ask('こんにちは', (doc) => {
                 console.log('doc:', doc);
-
                 assert(doc.class_name);
                 assert(doc.message);
                 assert(doc.confidence);
+                done();
+            });
+        });
+
+        it('list Classifier エラー時 (NLC パスワードエラー)', (done) => {
+            qaNlcError.ask('こんにちは', (doc) => {
+                console.log('doc:', doc);
+                assert.equal('', doc.class_name);
+                assert(doc.message);
+                assert.equal(0, doc.confidence);
                 done();
             });
         });

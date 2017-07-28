@@ -1,6 +1,6 @@
 {
   "name": "watson-nlc-qa",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "Watson NLC Q&A Model",
   "author": "Ippei SUZUKI",
   "homepage": "https://github.com/ippei0605/watson-nlc-qa#readme",
@@ -9,7 +9,7 @@
   "scripts": {
     "doc": "jsdoc -c jsdoc-conf.json *.js test/*.js",
     "test": "istanbul cover _mocha",
-    "codecov": "codecov -t $CODECOV_TOKEN"
+    "codecov": "codecov"
   },
   "dependencies": {
     "cloudant": "^1.8.0",
