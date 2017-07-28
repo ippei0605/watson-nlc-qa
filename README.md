@@ -35,7 +35,7 @@ $ npm install watson-nlc-qa
 ---
 
 ## APIs
-* [QaModel(cloudantCreds, dbname, nlcCreds, [classifierid])](##qamodelcloudantcreds-dbname-nlccreds-classifierid)
+* [QaModel(cloudantCreds, dbname, nlcCreds, [classifierid])](#qamodelcloudantcreds-dbname-nlccreds-classifierid)
 * aaaa
 * [qa.insertDocuments(data, [callback])](#qainsertDocumentsdata-callback)
 
