@@ -5,41 +5,59 @@
 [![Build Status](https://travis-ci.org/ippei0605/watson-nlc-qa.svg?branch=master)](https://travis-ci.org/ippei0605/watson-nlc-qa)
 [![codecov](https://codecov.io/gh/ippei0605/watson-nlc-qa/branch/master/graph/badge.svg)](https://codecov.io/gh/ippei0605/watson-nlc-qa)
 
-
 ## はじめに
 Q&A Chatbot を作成するためのモデルです。
-* このモデルを使用して作成した Q&A Chatbot はこちらです。
-  - https://github.com/ippei0605/qa-chatbot
 
-## システム要件
+### 使い方
+```javascript
+const QaModel = require('watson-nlc-qa');
+const qa = new QaModel(cloudantCreds, 'answer', nlcCreds);
+qa.ask('こんにちは', (answer) => {
+    console.log('answer:', answer);
+});
+```
+
+### システム要件
 次のサービスを使用してください。
 * IBM Bluemix
   - [Cloudant NoSQL DB](https://console.bluemix.net/catalog/services/cloudant-nosql-db?locale=ja)
   - [Watson Natural Language Classifier](https://console.bluemix.net/catalog/services/natural-language-classifier?locale=ja)
 
-## インストール
+### インストール
 ```
 $ npm install watson-nlc-qa
 ```
 
-## API リファレンス
-### QaModel(nlcCreds, classifierId, cloudantCreds, dbName)
+### 参考情報
+* このモデルを使用した Q&A Chatbot をこちらに開発しました。
+  - https://github.com/ippei0605/qa-chatbot
+
+---
+
+## APIs
+* [QaModel(cloudantCreds, dbname, nlcCreds, [classifierid])](##qamodelcloudantcreds-dbname-nlccreds-classifierid)
+* aaaa
+* [qa.insertDocuments(data, [callback])](#qainsertDocumentsdata-callback)
+
+---
+
+
+
+
+## QaModel(cloudantCreds, dbname, nlcCreds, [classifierid])
 Q&A モデルを生成します。
 ```javascript
 const QaModel = require('watson-nlc-qa');
-
-const qa = new QaModel(nlcCreds, '', cloudantCreds, 'answer');
+const qa = new QaModel(cloudantCreds, 'answer', nlcCreds);
 ```
-* nlcCreds {object} Natural Language Classifier の接続情報
 
-    ```json
-    {
-        "url": "{url}",
-        "username": "{username}",
-        "password": "{password}"
-    }
-    ```
-* classifierId {string} Classifier ID、空文字の場合は最新の Classifier を選択します。
+|パラメータ     |必須  |型      |説明                                          |
+| ------------ | --- | ------ | ------------------------------------------- |
+|cloudantCreds |Yes  |object  |Cloudant NoSQL DB の接続情報                  |
+|dbName        |Yes  |string  |データベース名                                |
+|nlcCreds      |Yes  |object  |Natural Language Classifier のサービス資格情報 |
+|classifierId  |No   |string  |Classifier ID。未設定または空文字の場合は使用可能な最新の Classifier を選択します。|
+
 * cloudantCreds {object} Cloudant NoSQL DB の接続情報
 
     ```json
@@ -51,7 +69,16 @@ const qa = new QaModel(nlcCreds, '', cloudantCreds, 'answer');
         "url": "{url}"
     }
     ```
-* dbName {string} データベース名
+    
+* nlcCreds {object} Natural Language Classifier のサービス資格情報
+
+    ```json
+    {
+        "url": "{url}",
+        "username": "{username}",
+        "password": "{password}"
+    }
+    ```
 
 ### qa.setClassifierId(classifierId)
 メンバーに Classifier ID をセットします。
@@ -154,7 +181,7 @@ qa.insertDesignDocument('', (result) => {
     }
     ```
 
-### qa.insertDocuments(data, [callback])
+## qa.insertDocuments(data, [callback])
 データを登録します。
 ```javascript
 qa.insertDocuments(data, (result) => {
@@ -203,3 +230,5 @@ qa.createDatabase(() => {
     qa.insertDocuments(JSON.parse(data));
 });
 ```
+
+
