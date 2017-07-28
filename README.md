@@ -37,7 +37,7 @@ $ npm install watson-nlc-qa
 ## APIs
 * [QaModel(cloudantCreds, dbname, nlcCreds, [classifierid])](#qamodelcloudantcreds-dbname-nlccreds-classifierid)
 * [ask(text, callback)](#asktext-callback)
-* [askClassName(text, callback)](#askclassbametext-callback)
+* [askClassName(text, callback)](#askclassnametext-callback)
 * [getAppSettings(callback)](#getappsettingscallback)
 * [createDatabase([callback])](#createdatabasecallback)
 * [insertDesignDocument([mapFunction], [callback])](#insertdesigndocumentmapfunction-callback)
