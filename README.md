@@ -54,14 +54,14 @@ const QaModel = require('watson-nlc-qa');
 const qa = new QaModel(cloudantCreds, 'answer', nlcCreds);
 ```
 
-|パラメータ     |必須  |型      |説明                                          |
-| ------------ | --- | ------ | ------------------------------------------- |
-|cloudantCreds |Yes  |object  |Cloudant NoSQL DB の接続情報                  |
-|dbName        |Yes  |string  |データベース名                                |
-|nlcCreds      |Yes  |object  |Natural Language Classifier のサービス資格情報 |
+|パラメータ     |必須  |型      |説明                                                 |
+| ------------ | --- | ------ | -------------------------------------------------- |
+|cloudantCreds |Yes  |object  |Cloudant NoSQL DB のサービス資格情報                  |
+|dbName        |Yes  |string  |データベース名                                        |
+|nlcCreds      |Yes  |object  |Natural Language Classifier のサービス資格情報        |
 |classifierId  |No   |string  |Classifier ID。未設定または空文字の場合は使用可能な最新の Classifier を選択します。|
 
-* cloudantCreds {object} Cloudant NoSQL DB の接続情報
+* cloudantCreds {object} Cloudant NoSQL DB のサービス資格情報
 
     ```json
     {

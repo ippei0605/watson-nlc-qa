@@ -1,9 +1,12 @@
 {
   "name": "watson-nlc-qa",
-  "version": "0.0.8",
+  "version": "0.0.10",
   "description": "Watson NLC Q&A Model",
   "author": "Ippei SUZUKI",
-  "homepage": "https://github.com/ippei0605/watson-nlc-qa#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ippei0605/watson-nlc-qa.git"
+  },
   "license": "MIT",
   "main": "./index",
   "scripts": {
