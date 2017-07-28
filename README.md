@@ -36,13 +36,16 @@ $ npm install watson-nlc-qa
 
 ## APIs
 * [QaModel(cloudantCreds, dbname, nlcCreds, [classifierid])](#qamodelcloudantcreds-dbname-nlccreds-classifierid)
-* aaaa
-* [qa.insertDocuments(data, [callback])](#qainsertDocumentsdata-callback)
+* [ask(text, callback)](#asktext-callback)
+* [askClassName(text, callback)](#askclassNametext-callback)
+* [getAppSettings(callback)](#getAppSettingscallback)
+* [createDatabase([callback])](#createdatabasecallback)
+* [insertDesignDocument([mapFunction], [callback])](#insertdesigndocumentmapfunction-callback)
+* [insertDocuments(data, [callback])](#insertdocumentsdata-callback)
+* [train(file, metadata, [mode], [callback])](#trainfile-metadata-mode-callback)
+* [Tips](#tips)
 
 ---
-
-
-
 
 ## QaModel(cloudantCreds, dbname, nlcCreds, [classifierid])
 Q&A モデルを生成します。
@@ -80,95 +83,123 @@ const qa = new QaModel(cloudantCreds, 'answer', nlcCreds);
     }
     ```
 
-### qa.setClassifierId(classifierId)
-メンバーに Classifier ID をセットします。
-```javascript
-setClassifierId('359f3fx202-nlc-203641');
-```
-* classifierId {string} Classifier ID
+[一覧に戻る](#apis)
 
-### qa.getAppSettings(callback)
-アプリケーションの設定値を取得します。
+---
+
+## ask(text, callback)
+テキスト分類で回答 answer を取得します。
+```javascript
+qa.ask('こんにちは', (answer) => {
+    console.log(answer);
+});
+```
+
+|パラメータ     |必須  |型       |説明                                                 |
+| ------------ | --- | ------- | --------------------------------------------------- |
+|text          |Yes  |string   |質問                                                 |
+|callback      |Yes  |function |取得した回答 answer を引数にコールバックする。           |
+
+* 回答 answer
+```json
+{
+  "class_name": "{string} クラス名",
+  "message": "{string} メッセージ",
+  "confidence": "{number} 自信度"
+}
+```
+
+[一覧に戻る](#apis)
+
+---
+
+## askClassName(text, callback)
+クラス名により回答 answer を取得します。
+```javascript
+qa.askClassName('general_hello', (answer) => {
+    console.log(answer);
+});
+```
+
+|パラメータ     |必須  |型       |説明                                                 |
+| ------------ | --- | ------- | --------------------------------------------------- |
+|text          |Yes  |string   |クラス名                                              |
+|callback      |Yes  |function |取得した回答 answer を引数にコールバックします。          |
+
+[一覧に戻る](#apis)
+
+---
+
+## getAppSettings(callback)
+アプリケーション設定 value を取得します。
 ```javascript
 qa.getAppSettings((value) => {
     console.log(value);
 });
 ```
-* callback {function} コールバック
 
-### qa.askClassName(text, callback)
-クラス名により回答を取得します。
-```javascript
-qa.askClassName('general_hello', (value) => {
-    console.log(value);
-});
-```
-* callback {function} コールバック
-* value {object} 回答
+|パラメータ     |必須  |型       |説明                                                          |
+| ------------ | --- | ------- | ----------------------------------------------------------- |
+|callback      |Yes  |function |取得したアプリケーション設定 value を引数にコールバックします。     |
 
+* アプリケーション設定 value
 ```json
 {
-    "class_name": "general_hello",
-    "message": "こんにちは。私はワトソンです。",
-    "confidence": 0
+  "name": "名前"
 }
 ```
+> ID「app_settings」でデータベースに登録した文書をそのまま取得できます。
 
-### ask(text, callback)
-テキスト分類で回答を取得します。
-```javascript
-qa.ask('こんにちは', (value) => {
-    console.log(value);
-});
-```
-* callback {function} コールバック
-* value {object} 回答 (上記)
+[一覧に戻る](#apis)
 
-### qa.createClassifier(file, mode, [callback])
-Classifier を作成します。
+---
 
-```javascript
-qa.createClassifier(fs.createReadStream(__dirname + '/' + TRAINING_FILENAME));
-```
-* file {object} ファイルストリーム
-* mode {boolean} モード
-  - true: Classifier を作成する
-  - false: Classifierが一つ以上ある場合は作成しない
-* callback {function} コールバック
-
-### qa.createDatabase([callback])
+## createDatabase([callback])
 データベースを作成します。
 ```javascript
 qa.createDatabase((result)=>{
     console.log(result);
 });
 ```
-* callback {function} コールバック
 
-### qa.insertDesignDocument(mapFunction, [callback])
+|パラメータ     |必須  |型       |説明                                                          |
+| ------------ | --- | ------- | ----------------------------------------------------------- |
+|callback      |No   |function |取得した結果 result を引数にコールバックします。                  |
+
+[一覧に戻る](#apis)
+
+---
+
+## insertDesignDocument([mapFunction], [callback])
 データベースに設計文書を登録します。
 ```javascript
 qa.insertDesignDocument('', (result) => {
     console.log(result);
 });
 ```
-* callback {function} コールバック
 
-* デフォルトの設計文書
+|パラメータ     |必須  |型       |説明                                                          |
+| ------------ | --- | ------- | ----------------------------------------------------------- |
+|mapFunction   |No   |string   |マップファンクション。未設定または空文字の場合はデフォルトのマップファンクションで設計文書を作成します。|
+|callback      |No   |function |取得した結果 result を引数にコールバックします。                  |
+
+* 設計文書
+
     ```json
     {
         "_id": "_design/answers",
         "views": {
             "list": {
-                "map": "{デフォルトのマップファンクション}"
+                "map": "{マップファンクション}"
             }
         }
     }
     ```
-
+    
 * デフォルトのマップファンクション
+
     ```javascript
-    function (doc) {
+    const MAP_FUNCTION = `function (doc) {
         if (doc._id !== 'app_settings') {
             var row = {
                 "_id": doc._id,
@@ -178,17 +209,28 @@ qa.insertDesignDocument('', (result) => {
             };
             emit(doc._id, row);
         }
-    }
+    }`;
     ```
 
-## qa.insertDocuments(data, [callback])
+[一覧に戻る](#apis)
+
+---
+
+## insertDocuments(data, [callback])
 データを登録します。
 ```javascript
 qa.insertDocuments(data, (result) => {
     console.log(result);
 });
 ```
-* data {object} データ
+
+|パラメータ     |必須  |型       |説明                                                          |
+| ------------ | --- | ------- | ----------------------------------------------------------- |
+|data          |Yes  |object   |データ                                                        |
+|callback      |No   |function |取得した結果 result を引数にコールバックします。                  |
+
+
+* データ
 
     ```json
     {
@@ -213,9 +255,55 @@ qa.insertDocuments(data, (result) => {
     }
     ```
 
-* callback {function} コールバック
+[一覧に戻る](#apis)
 
-## Tips
+---
+
+## train(file, metadata, [mode], [callback])
+Classifier を作成します。
+
+```javascript
+const trainingFile = fs.createReadStream(__dirname + '/classifier.csv');
+const metadata = {
+    "language": "ja",
+    "name": "My Classifier"
+};
+
+qa.train(trainingFile, metadata, false, (result) => {
+    console.log('####', result);
+});
+```
+
+|パラメータ     |必須  |型       |説明                                                          |
+| ------------ | --- | ------- | ----------------------------------------------------------- |
+|file          |Yes  |file     |トレーニング CSV ファイル                                       |
+|metadata      |Yes  |object   |トレーニングメタデータ                                          |
+|mode          |No   |boolean  |true: Classifier を作成します / false: Classifier が一つ以上ある場合は作成しません。|
+|callback      |No   |function |取得した結果 result を引数にコールバックします。                  |
+
+* トレーニング CSV ファイル
+
+    ```
+    "こんにちは。","general_hello"
+    "間違っています。","general_sorry"
+    "ありがとう。","general_thanks"
+    "自己紹介して。","general_whoareyou"
+    ```
+
+* トレーニングメタデータ
+
+    ```json
+    {
+        "language": "ja",
+        "name": "{Classifier 名}"
+    }
+    ```
+
+[一覧に戻る](#apis)
+
+---
+
+## Tips 
 ### データの初期登録
 データベース作成、設計文書登録、データ登録は個別にも実行できますが、次のようにすることでデータベース作成後に設計文書登録とデータ登録を実行できます。
 
@@ -231,4 +319,6 @@ qa.createDatabase(() => {
 });
 ```
 
+[一覧に戻る](#apis)
 
+---
