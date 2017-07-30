@@ -40,7 +40,7 @@ $ npm install watson-nlc-qa
 ---
 
 ## 目次
-* APIs
+* [APIs](#apis)
     * [QaModel(cloudantCreds, dbname, nlcCreds, [classifierid])](#qamodelcloudantcreds-dbname-nlccreds-classifierid)
     * [ask(text, callback)](#asktext-callback)
     * [askClassName(text, callback)](#askclassnametext-callback)
@@ -50,6 +50,9 @@ $ npm install watson-nlc-qa
     * [insertDocuments(data, [callback])](#insertdocumentsdata-callback)
     * [train(file, metadata, [mode], [callback])](#trainfile-metadata-mode-callback)
 * [Tips](#tips)
+    * [データを初期登録する](#データを初期登録する)
+    * [取得した回答を変更する](#取得した回答を変更する)
+    * [Natural Language Classifier を多段構成にする](#natural-language-classifier-を多段構成にする)
 
 ---
 
@@ -330,7 +333,7 @@ qa.createDatabase(() => {
 
 ---
 
-### 回答の変更する
+### 取得した回答を変更する
 ask メソッドで取得した回答を条件によって変更したい場合は、コールバックに処理を記述することで実現できます。
 以下は現在時刻 now によりあいさつを「おはようございます」、「こんにちは」、「こんばんは」、「お疲れ様です」に変更する例です。
 
