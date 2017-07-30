@@ -8,6 +8,9 @@
 ## はじめに
 Q&A Chatbot を作成するためのモデルです。
 
+### コンセプト
+![fig-1](docs/fig-1.png)
+
 ### 使い方
 ```javascript
 const QaModel = require('watson-nlc-qa');
@@ -22,6 +25,8 @@ qa.ask('こんにちは', (answer) => {
 * IBM Bluemix
   - [Cloudant NoSQL DB](https://console.bluemix.net/catalog/services/cloudant-nosql-db?locale=ja)
   - [Watson Natural Language Classifier](https://console.bluemix.net/catalog/services/natural-language-classifier?locale=ja)
+* Node.js
+  - 6 以上
 
 ### インストール
 ```
@@ -34,20 +39,23 @@ $ npm install watson-nlc-qa
 
 ---
 
-## APIs
-* [QaModel(cloudantCreds, dbname, nlcCreds, [classifierid])](#qamodelcloudantcreds-dbname-nlccreds-classifierid)
-* [ask(text, callback)](#asktext-callback)
-* [askClassName(text, callback)](#askclassnametext-callback)
-* [getAppSettings(callback)](#getappsettingscallback)
-* [createDatabase([callback])](#createdatabasecallback)
-* [insertDesignDocument([mapFunction], [callback])](#insertdesigndocumentmapfunction-callback)
-* [insertDocuments(data, [callback])](#insertdocumentsdata-callback)
-* [train(file, metadata, [mode], [callback])](#trainfile-metadata-mode-callback)
+## 目次
+* APIs
+    * [QaModel(cloudantCreds, dbname, nlcCreds, [classifierid])](#qamodelcloudantcreds-dbname-nlccreds-classifierid)
+    * [ask(text, callback)](#asktext-callback)
+    * [askClassName(text, callback)](#askclassnametext-callback)
+    * [getAppSettings(callback)](#getappsettingscallback)
+    * [createDatabase([callback])](#createdatabasecallback)
+    * [insertDesignDocument([mapFunction], [callback])](#insertdesigndocumentmapfunction-callback)
+    * [insertDocuments(data, [callback])](#insertdocumentsdata-callback)
+    * [train(file, metadata, [mode], [callback])](#trainfile-metadata-mode-callback)
 * [Tips](#tips)
 
 ---
 
-## QaModel(cloudantCreds, dbname, nlcCreds, [classifierid])
+## APIs
+
+### QaModel(cloudantCreds, dbname, nlcCreds, [classifierid])
 Q&A モデルを生成します。
 ```javascript
 const QaModel = require('watson-nlc-qa');
@@ -83,11 +91,11 @@ const qa = new QaModel(cloudantCreds, 'answer', nlcCreds);
     }
     ```
 
-[一覧に戻る](#apis)
+[目次に戻る](#目次)
 
 ---
 
-## ask(text, callback)
+### ask(text, callback)
 テキスト分類で回答 answer を取得します。
 ```javascript
 qa.ask('こんにちは', (answer) => {
@@ -109,11 +117,11 @@ qa.ask('こんにちは', (answer) => {
 }
 ```
 
-[一覧に戻る](#apis)
+[目次に戻る](#目次)
 
 ---
 
-## askClassName(text, callback)
+### askClassName(text, callback)
 クラス名により回答 answer を取得します。
 ```javascript
 qa.askClassName('general_hello', (answer) => {
@@ -126,11 +134,11 @@ qa.askClassName('general_hello', (answer) => {
 |text          |Yes  |string   |クラス名                                              |
 |callback      |Yes  |function |取得した回答 answer を引数にコールバックします。          |
 
-[一覧に戻る](#apis)
+[目次に戻る](#目次)
 
 ---
 
-## getAppSettings(callback)
+### getAppSettings(callback)
 アプリケーション設定 value を取得します。
 ```javascript
 qa.getAppSettings((value) => {
@@ -150,11 +158,11 @@ qa.getAppSettings((value) => {
 ```
 > ID「app_settings」でデータベースに登録した文書をそのまま取得できます。
 
-[一覧に戻る](#apis)
+[目次に戻る](#目次)
 
 ---
 
-## createDatabase([callback])
+### createDatabase([callback])
 データベースを作成します。
 ```javascript
 qa.createDatabase((result)=>{
@@ -166,11 +174,11 @@ qa.createDatabase((result)=>{
 | ------------ | --- | ------- | ----------------------------------------------------------- |
 |callback      |No   |function |取得した結果 result を引数にコールバックします。                  |
 
-[一覧に戻る](#apis)
+[目次に戻る](#目次)
 
 ---
 
-## insertDesignDocument([mapFunction], [callback])
+### insertDesignDocument([mapFunction], [callback])
 データベースに設計文書を登録します。
 ```javascript
 qa.insertDesignDocument('', (result) => {
@@ -212,11 +220,11 @@ qa.insertDesignDocument('', (result) => {
     }`;
     ```
 
-[一覧に戻る](#apis)
+[目次に戻る](#目次)
 
 ---
 
-## insertDocuments(data, [callback])
+### insertDocuments(data, [callback])
 データを登録します。
 ```javascript
 qa.insertDocuments(data, (result) => {
@@ -255,11 +263,11 @@ qa.insertDocuments(data, (result) => {
     }
     ```
 
-[一覧に戻る](#apis)
+[目次に戻る](#目次)
 
 ---
 
-## train(file, metadata, [mode], [callback])
+### train(file, metadata, [mode], [callback])
 Classifier を作成します。
 
 ```javascript
@@ -268,7 +276,6 @@ const metadata = {
     "language": "ja",
     "name": "My Classifier"
 };
-
 qa.train(trainingFile, metadata, false, (result) => {
     console.log('####', result);
 });
@@ -299,12 +306,13 @@ qa.train(trainingFile, metadata, false, (result) => {
     }
     ```
 
-[一覧に戻る](#apis)
+[目次に戻る](#目次)
 
 ---
 
-## Tips 
-### データの初期登録
+## Tips
+
+### データを初期登録する
 データベース作成、設計文書登録、データ登録は個別にも実行できますが、次のようにすることでデータベース作成後に設計文書登録とデータ登録を実行できます。
 
 ```javascript
@@ -312,13 +320,103 @@ qa.train(trainingFile, metadata, false, (result) => {
 qa.createDatabase(() => {
     // 設計文書を作成する。
     qa.insertDesignDocument();
-
     // データを登録する。
     const data = fs.readFileSync(__dirname + '/' + CONTENT_FILENAME).toString();
     qa.insertDocuments(JSON.parse(data));
 });
 ```
 
-[一覧に戻る](#apis)
+[目次に戻る](#目次)
+
+---
+
+### 回答の変更する
+ask メソッドで取得した回答を条件によって変更したい場合は、コールバックに処理を記述することで実現できます。
+以下は現在時刻 now によりあいさつを「おはようございます」、「こんにちは」、「こんばんは」、「お疲れ様です」に変更する例です。
+
+```javascript
+// Q&A モデルを作成する。
+const qa = new QaModel(context.cloudantCreds, context.DB_NAME, context.nlcCreds);
+// こんにちはを変換する。
+const replaceHello = (text, replaceText) => {
+    return text.replace(/こんにちは/g, replaceText);
+};
+// 条件により回答を確定する。
+const modify = (answer, now) => {
+    switch (answer.class_name) {
+        case 'general_hello':
+            let regexp = /(\d+)年(\d+)月(\d+)日 (\d+)時(\d+)分(\d+)秒/;
+            let hour = parseInt(regexp.exec(now)[4], 10);
+            if (hour >= 17) {
+                answer.message = replaceHello(value.message, 'こんばんは');
+            } else if (hour < 11 && hour >= 5) {
+                answer.message = replaceHello(value.message, 'おはようございます');
+            } else if (hour < 5) {
+                answer.message = replaceHello(value.message, 'お疲れ様です');
+            }
+            break;
+        default:
+            break;
+    }
+    return answer;
+};
+// 質問する。
+const text = 'こんにちは';
+qa.ask(text, (answer) => {
+    const now = '2017年7月29日 14時26分44秒';
+    console.log(modify(answer, now));
+});
+```
+
+[目次に戻る](#目次)
+
+---
+
+### Natural Language Classifier を多段構成にする
+次のように、連想配列に必要なQ&Aモデルを生成してください。この例は、classification で切り分け、general または diet に問合せる構成です。
+
+```javascript
+const qa = {
+    "classification": new QaModel(cloudantCreds, 'classification', nlcCreds, '{classification の Classifier ID}'),
+    "general": new QaModel(cloudantCreds, 'general', nlcCreds, '{general の Classifier ID}'),
+    "diet": new QaModel(cloudantCreds, 'diet', nlcCreds, '{diet の Classifier ID}')
+};
+const text = 'こんにちは';
+qa["diet"].ask(text, (classification) => {
+    qa[classification.message].ask(text, (answer) => {
+        console.log(answer);
+    })
+});
+```
+
+classification の回答 answer は質問により general または diet が返るようにデータ登録とトレーニングをしてください。
+
+* データの例
+
+    ```json
+        {
+          "docs": [
+            {
+              "_id": "general",
+              "message": "general"
+            },
+            {
+              "_id": "diet",
+              "message": "diet"
+            }
+          ]
+        }
+    ```
+
+* トレーニングデータ (csv) の例
+
+    ```
+    "こんにちは。","general"
+    "ありがとう。","general"
+    "全身運動でダイエットしたい。","diet"
+    "小顔になりたい。","diet"
+    ```
+
+[目次に戻る](#目次)
 
 ---

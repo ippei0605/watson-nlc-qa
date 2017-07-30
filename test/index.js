@@ -45,7 +45,7 @@ const MAP_FUNCTION = `function (doc) {
     }
 }`;
 
-// Bluemix サービス接続情報
+// Bluemix サービス資格情報
 const
     nlcCreds = JSON.parse(process.env.NLC_CREDS),
     errorNlcCreds = JSON.parse(process.env.ERROR_NLC_CREDS),
@@ -83,6 +83,13 @@ describe('QaModel', () => {
                     "message": "こんにちは。私はワトソンです。",
                     "confidence": 0
                 }, doc);
+                done();
+            });
+        });
+        it('DBから値が取得できた場合、option情報', (done) => {
+            qa.askClassName('general_thanks', (doc) => {
+                console.log(doc);
+                assert(doc.option);
                 done();
             });
         });

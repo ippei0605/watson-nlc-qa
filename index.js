@@ -18,7 +18,8 @@ const MAP_FUNCTION = `function (doc) {
             "_id": doc._id,
             "_rev": doc._rev,
             "message": doc.message,
-            "questions": doc.questions
+            "questions": doc.questions,
+            "option": doc.option
         };
         emit(doc._id, row);
     }
@@ -57,11 +58,15 @@ const getAnswer = (db, class_name, confidence, callback) => {
         if (error) {
             callback(gerErrorMessage(error));
         } else {
-            callback({
+            let answer = {
                 "class_name": body._id,
                 "message": body.message,
                 "confidence": confidence
-            });
+            };
+            if (body.option) {
+                answer.option = body.option;
+            }
+            callback(answer);
         }
     });
 };
@@ -191,7 +196,6 @@ const getStatusClassifiers = (nlcCreds, src, dst, callback) => {
     }
 };
 
-
 // 使用可能な最新の Claccifier ID を取得する。(取得できない場合は空文字)
 const getLatestClassifierId = (nlcCreds, callback) => {
     let latestClassifierId = '';
@@ -210,9 +214,9 @@ const getLatestClassifierId = (nlcCreds, callback) => {
                         return 0;
                     });
                     // 使用可能なClassifier を探す。
-                    for (let i = 0, length = statusClassifiers.length; i < length; i++) {
-                        if ('Available' === statusClassifiers[i].status) {
-                            latestClassifierId = statusClassifiers[i].classifier_id;
+                    for (const target of statusClassifiers) {
+                        if ('Available' === target.status && target.classifier_id) {
+                            latestClassifierId = target.classifier_id;
                             break;
                         }
                     }
