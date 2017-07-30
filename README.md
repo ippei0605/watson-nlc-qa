@@ -38,8 +38,8 @@ $ npm install watson-nlc-qa
   - https://github.com/ippei0605/qa-chatbot
 
 ---
-
-## <a name="table-of-contents">目次
+<a name="table-of-contents"></a>
+## 目次
 * [APIs](#apis)
     * [QaModel(cloudantCreds, dbname, nlcCreds, [classifierid])](#qamodelcloudantcreds-dbname-nlccreds-classifierid)
     * [ask(text, callback)](#asktext-callback)
@@ -374,8 +374,8 @@ qa.ask(text, (answer) => {
 [目次に戻る](#table-of-contents)
 
 ---
-
-### <a name="tips-3">Natural Language Classifier を多段構成にする
+<a name="tips-3"></a>
+### Natural Language Classifier を多段構成にする
 次のように、連想配列に必要なQ&Aモデルを生成してください。この例は、classification で切り分け、general または diet に問合せる構成です。
 
 ```javascript
