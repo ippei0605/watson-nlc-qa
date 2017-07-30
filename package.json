@@ -1,6 +1,6 @@
 {
   "name": "watson-nlc-qa",
-  "version": "0.0.16",
+  "version": "1.0.0",
   "description": "Watson NLC Q&A Model",
   "author": "Ippei SUZUKI",
   "repository": {
