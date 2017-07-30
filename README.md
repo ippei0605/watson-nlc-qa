@@ -39,7 +39,7 @@ $ npm install watson-nlc-qa
 
 ---
 
-## 目次
+## <a name="table-of-contents">目次
 * [APIs](#apis)
     * [QaModel(cloudantCreds, dbname, nlcCreds, [classifierid])](#qamodelcloudantcreds-dbname-nlccreds-classifierid)
     * [ask(text, callback)](#asktext-callback)
@@ -50,9 +50,9 @@ $ npm install watson-nlc-qa
     * [insertDocuments(data, [callback])](#insertdocumentsdata-callback)
     * [train(file, metadata, [mode], [callback])](#trainfile-metadata-mode-callback)
 * [Tips](#tips)
-    * [データを初期登録する](#データを初期登録する)
-    * [取得した回答を変更する](#取得した回答を変更する)
-    * [Natural Language Classifier を多段構成にする](#natural-language-classifier-を多段構成にする)
+    * [データを初期登録する](#tips-1)
+    * [取得した回答を変更する](#tips-2)
+    * [Natural Language Classifier を多段構成にする](#tips-3)
 
 ---
 
@@ -94,7 +94,7 @@ const qa = new QaModel(cloudantCreds, 'answer', nlcCreds);
     }
     ```
 
-[目次に戻る](#目次)
+[目次に戻る](#table-of-contents)
 
 ---
 
@@ -120,7 +120,7 @@ qa.ask('こんにちは', (answer) => {
 }
 ```
 
-[目次に戻る](#目次)
+[目次に戻る](#table-of-contents)
 
 ---
 
@@ -137,7 +137,7 @@ qa.askClassName('general_hello', (answer) => {
 |text          |Yes  |string   |クラス名                                              |
 |callback      |Yes  |function |取得した回答 answer を引数にコールバックします。          |
 
-[目次に戻る](#目次)
+[目次に戻る](#table-of-contents)
 
 ---
 
@@ -161,7 +161,7 @@ qa.getAppSettings((value) => {
 ```
 > ID「app_settings」でデータベースに登録した文書をそのまま取得できます。
 
-[目次に戻る](#目次)
+[目次に戻る](#table-of-contents)
 
 ---
 
@@ -177,7 +177,7 @@ qa.createDatabase((result)=>{
 | ------------ | --- | ------- | ----------------------------------------------------------- |
 |callback      |No   |function |取得した結果 result を引数にコールバックします。                  |
 
-[目次に戻る](#目次)
+[目次に戻る](#table-of-contents)
 
 ---
 
@@ -223,7 +223,7 @@ qa.insertDesignDocument('', (result) => {
     }`;
     ```
 
-[目次に戻る](#目次)
+[目次に戻る](#table-of-contents)
 
 ---
 
@@ -266,7 +266,7 @@ qa.insertDocuments(data, (result) => {
     }
     ```
 
-[目次に戻る](#目次)
+[目次に戻る](#table-of-contents)
 
 ---
 
@@ -309,13 +309,13 @@ qa.train(trainingFile, metadata, false, (result) => {
     }
     ```
 
-[目次に戻る](#目次)
+[目次に戻る](#table-of-contents)
 
 ---
 
 ## Tips
 
-### データを初期登録する
+### <a name="tips-1">データを初期登録する
 データベース作成、設計文書登録、データ登録は個別にも実行できますが、次のようにすることでデータベース作成後に設計文書登録とデータ登録を実行できます。
 
 ```javascript
@@ -329,11 +329,11 @@ qa.createDatabase(() => {
 });
 ```
 
-[目次に戻る](#目次)
+[目次に戻る](#table-of-contents)
 
 ---
 
-### 取得した回答を変更する
+### <a name="tips-2">取得した回答を変更する
 ask メソッドで取得した回答を条件によって変更したい場合は、コールバックに処理を記述することで実現できます。
 以下は現在時刻 now によりあいさつを「おはようございます」、「こんにちは」、「こんばんは」、「お疲れ様です」に変更する例です。
 
@@ -371,11 +371,11 @@ qa.ask(text, (answer) => {
 });
 ```
 
-[目次に戻る](#目次)
+[目次に戻る](#table-of-contents)
 
 ---
 
-### Natural Language Classifier を多段構成にする
+### <a name="tips-3">Natural Language Classifier を多段構成にする
 次のように、連想配列に必要なQ&Aモデルを生成してください。この例は、classification で切り分け、general または diet に問合せる構成です。
 
 ```javascript
@@ -420,6 +420,6 @@ classification の回答 answer は質問により general または diet が返
     "小顔になりたい。","diet"
     ```
 
-[目次に戻る](#目次)
+[目次に戻る](#table-of-contents)
 
 ---
