@@ -386,7 +386,7 @@ const qa = {
     "diet": new QaModel(cloudantCreds, 'diet', nlcCreds, '{diet の Classifier ID}')
 };
 const text = 'こんにちは';
-qa["diet"].ask(text, (classification) => {
+qa["classification"].ask(text, (classification) => {
     qa[classification.message].ask(text, (answer) => {
         console.log(answer);
     })
