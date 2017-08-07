@@ -1,4 +1,4 @@
-# NPMモジュール
+# NPM モジュール
 node_modules/
 
 # JSDoc の出力先
@@ -16,5 +16,6 @@ coverage/
 # その他
 .setenv
 .command-memo
+package-lock.json
 public/dist/
 upload/

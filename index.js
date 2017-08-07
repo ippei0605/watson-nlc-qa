@@ -35,6 +35,13 @@ const DESIGN_DOC = {
     }
 };
 
+// Classifier ID 未設定時の回答
+const CLASSIFIER_NOT_DEFINED = {
+    "class_name": "",
+    "message": "Classifier が設定されてません。",
+    "confidence": 0
+};
+
 // コールバックがあれば実行する。
 const execCallback = (callback, value) => {
     if (callback && typeof(callback) === "function") {
@@ -86,7 +93,7 @@ const listClassifier = (nlcCreds, callback) => {
         "json": true,
     };
     request(list, (error, response, body) => {
-        if (!error && 200 === response.statusCode) {
+        if (response.statusCode === 200) {
             callback(body.classifiers);
         } else {
             console.log('error:', body);
@@ -110,10 +117,10 @@ const getClassifier = (nlcCreds, classifierId, callback) => {
         "json": true,
     };
     request(get, (error, response, body) => {
-        if (!error && 200 === response.statusCode) {
+        if (response.statusCode === 200) {
             callback(body);
         } else {
-            console.log('error:', error);
+            console.log('error:', body);
             callback({});
         }
     });
@@ -138,7 +145,7 @@ const createClassifier = (nlcCreds, csvFile, metadata, callback) => {
         }
     };
     request(create, (error, response, body) => {
-        if (!error && 200 === response.statusCode) {
+        if (response.statusCode === 200) {
             console.log('NLC の Classifier を作成しました。(学習中)', body);
         } else {
             console.log('error:', body);
@@ -166,7 +173,7 @@ const classify = (nlcCreds, classifierId, db, text, callback) => {
             }
         };
         request(classify, (error, response, body) => {
-            if (!error && 200 === response.statusCode) {
+            if (response.statusCode === 200) {
                 const topClass = body.classes[0];
                 getAnswer(db, topClass.class_name, topClass.confidence, callback);
             } else {
@@ -175,11 +182,7 @@ const classify = (nlcCreds, classifierId, db, text, callback) => {
             }
         });
     } else {
-        callback({
-            "class_name": "",
-            "message": "Classifier が設定されてません。",
-            "confidence": 0
-        });
+        callback(CLASSIFIER_NOT_DEFINED);
     }
 };
 
@@ -196,11 +199,11 @@ const getStatusClassifiers = (nlcCreds, src, dst, callback) => {
     }
 };
 
-// 使用可能な最新の Claccifier ID を取得する。(取得できない場合は空文字)
+// 使用可能な最新の Classifier ID を取得する。(取得できない場合は空文字)
 const getLatestClassifierId = (nlcCreds, callback) => {
     let latestClassifierId = '';
     listClassifier(nlcCreds, (classifiers) => {
-        if (classifiers.length !== 0) {
+        if (0 !== classifiers.length) {
             getStatusClassifiers(nlcCreds, classifiers, [], (statusClassifiers) => {
                 if (statusClassifiers.length > 0) {
                     // ステータス一覧を作成日の新しい順にソートする。
