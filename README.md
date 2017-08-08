@@ -280,7 +280,7 @@ const metadata = {
     "name": "My Classifier"
 };
 qa.train(trainingFile, metadata, false, (result) => {
-    console.log('####', result);
+    console.log(result);
 });
 ```
 

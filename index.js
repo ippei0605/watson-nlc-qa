@@ -186,51 +186,38 @@ const classify = (nlcCreds, classifierId, db, text, callback) => {
     }
 };
 
-// NLC の Classifier のステータス一覧を取得する。
-const getStatusClassifiers = (nlcCreds, src, dst, callback) => {
-    const num = dst.length;
-    if (!src || num === src.length) {
-        callback(dst);
-    } else {
-        getClassifier(nlcCreds, src[num].classifier_id, (classifier) => {
-            dst.push(classifier);
-            getStatusClassifiers(nlcCreds, src, dst, callback);
-        });
-    }
-};
-
 // 使用可能な最新の Classifier ID を取得する。(取得できない場合は空文字)
 const getLatestClassifierId = (nlcCreds, callback) => {
     let latestClassifierId = '';
     listClassifier(nlcCreds, (classifiers) => {
-        if (0 !== classifiers.length) {
-            getStatusClassifiers(nlcCreds, classifiers, [], (statusClassifiers) => {
-                if (statusClassifiers.length > 0) {
-                    // ステータス一覧を作成日の新しい順にソートする。
-                    statusClassifiers.sort((a, b) => {
-                        if (a.created > b.created) {
-                            return -1;
-                        }
-                        if (a.created < b.created) {
-                            return 1;
-                        }
-                        return 0;
-                    });
-                    // 使用可能なClassifier を探す。
-                    for (const target of statusClassifiers) {
-                        if ('Available' === target.status && target.classifier_id) {
-                            latestClassifierId = target.classifier_id;
-                            break;
-                        }
-                    }
-                    callback(latestClassifierId);
-                } else {
-                    callback(latestClassifierId);
-                }
+        const _map = (nlcCreds, src, dst, callback) => {
+            const num = dst.length;
+            if (!src || num === src.length) {
+                callback(dst);
+            } else {
+                getClassifier(nlcCreds, src[num].classifier_id, (classifier) => {
+                    dst.push(classifier);
+                    _map(nlcCreds, src, dst, callback);
+                });
+            }
+        };
+
+        _map(nlcCreds, classifiers, [], (statusClassifiers) => {
+            // ステータス一覧を作成日の新しい順にソートする。
+            statusClassifiers.sort((a, b) => {
+                if (a.created > b.created) return -1;
+                if (a.created < b.created) return 1;
+                return 0;
             });
-        } else {
+            // 使用可能なClassifier を探す。
+            for (const target of statusClassifiers) {
+                if ('Available' === target.status && target.classifier_id) {
+                    latestClassifierId = target.classifier_id;
+                    break;
+                }
+            }
             callback(latestClassifierId);
-        }
+        });
     });
 };
 
@@ -404,9 +391,7 @@ class QaModel {
                     } else {
                         console.log('データベース[%s]を作成しました。', this.dbName);
                         this.db = this.cloudant.db.use(this.dbName);
-                        if (callback && typeof(callback) === "function") {
-                            execCallback(callback, body);
-                        }
+                        execCallback(callback, body);
                     }
                 });
             } else {
