@@ -39,7 +39,8 @@ const MAP_FUNCTION = `function (doc) {
             "_id": doc._id,
             "_rev": doc._rev,
             "message": doc.message,
-            "questions": doc.questions
+            "questions": doc.questions,
+            "option": doc.option
         };
         emit(doc._id, row);
     }
@@ -81,7 +82,10 @@ describe('QaModel', () => {
                 assert.deepEqual({
                     "class_name": "general_hello",
                     "message": "こんにちは。私はワトソンです。",
-                    "confidence": 0
+                    "confidence": 0,
+                    "option": {
+                        "memo": "メモ"
+                    }
                 }, doc);
                 done();
             });
@@ -112,6 +116,23 @@ describe('QaModel', () => {
                 assert(doc.class_name);
                 assert(doc.message);
                 assert(doc.confidence);
+                assert(doc.option.memo);
+                done();
+            });
+        });
+
+        it('Watson NLC に10件の回答を尋ねる。', (done) => {
+            qa.askAnswers('こんにちは', 10, (doc) => {
+                console.log('doc:', doc);
+                assert.equal(10, doc.length);
+                done();
+            });
+        });
+
+        it('Watson NLC に11件の回答を尋ねる。エラー', (done) => {
+            qa.askAnswers('こんにちは', 11, (doc) => {
+                console.log('doc:', doc);
+                assert.deepEqual({}, doc);
                 done();
             });
         });
@@ -128,7 +149,7 @@ describe('QaModel', () => {
 
         it('Watson NLC に尋ねる。存在しない Classifier を指定', (done) => {
             qaNoClassifierId.ask('こんにちは', (doc) => {
-                console.log('####doc:', doc);
+                console.log('doc:', doc);
                 assert.equal('', doc.class_name);
                 assert(doc.message);
                 assert.equal(0, doc.confidence);

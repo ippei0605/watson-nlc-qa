@@ -59,21 +59,25 @@ const gerErrorMessage = (err) => {
     };
 };
 
+const getAnswerObject = (value, confidence) => {
+    const answer = {
+        "class_name": value._id,
+        "message": value.message,
+        "confidence": confidence
+    };
+    if (value.option) {
+        answer.option = value.option;
+    }
+    return answer;
+};
+
 // 回答を取得する。
 const getAnswer = (db, class_name, confidence, callback) => {
     db.get(class_name, (error, body) => {
         if (error) {
             callback(gerErrorMessage(error));
         } else {
-            let answer = {
-                "class_name": body._id,
-                "message": body.message,
-                "confidence": confidence
-            };
-            if (body.option) {
-                answer.option = body.option;
-            }
-            callback(answer);
+            callback(getAnswerObject(body, confidence));
         }
     });
 };
@@ -90,7 +94,7 @@ const listClassifier = (nlcCreds, callback) => {
         "headers": {
             "Content-Type": "application/json"
         },
-        "json": true,
+        "json": true
     };
     request(list, (error, response, body) => {
         if (response.statusCode === 200) {
@@ -154,8 +158,8 @@ const createClassifier = (nlcCreds, csvFile, metadata, callback) => {
     });
 };
 
-// NLC の classify を実行する。
-const classify = (nlcCreds, classifierId, db, text, callback) => {
+// NLC の classify を実行する。取得するクラス件数は1から10までの整数で指定できる。1件の場合はクラスを、2件以上の場合はクラス配列を取得する。
+const classify = (nlcCreds, classifierId, db, text, count, callback) => {
     if (classifierId) {
         const classify = {
             "method": "POST",
@@ -174,14 +178,35 @@ const classify = (nlcCreds, classifierId, db, text, callback) => {
         };
         request(classify, (error, response, body) => {
             if (response.statusCode === 200) {
-                const topClass = body.classes[0];
-                getAnswer(db, topClass.class_name, topClass.confidence, callback);
+                const classes = body.classes, keys = [];
+                for (let i = 0; i < count; i++) {
+                    keys.push(classes[i].class_name);
+                }
+                db.view('answers', 'list', {
+                    "keys": keys
+                }, (error, body) => {
+                    if (error) {
+                        console.log('error:', error);
+                        callback(gerErrorMessage(error));
+                    } else {
+                        let i = 0;
+                        const answers = body.rows.map((row) => {
+                            return getAnswerObject(row.value, classes[i++].confidence);
+                        });
+                        if (count === 1) {
+                            callback(answers[0]);
+                        } else {
+                            callback(answers)
+                        }
+                    }
+                });
             } else {
                 console.log('error:', body);
                 callback(gerErrorMessage(body));
             }
         });
     } else {
+        console.log('error: classifier_id が設定されていません。');
         callback(CLASSIFIER_NOT_DEFINED);
     }
 };
@@ -277,6 +302,14 @@ class QaModel {
      */
 
     /**
+     * 回答配列
+     * @typedef {[object]} Answers
+     * @property {string} class_name クラス名
+     * @property {string} message メッセージ
+     * @property {number} confidence 自信度
+     */
+
+    /**
      * アプリケーション設定
      * @typedef {object} AppSettings
      * @property {string} name 名前
@@ -307,7 +340,7 @@ class QaModel {
     /**
      * 回答でコールバックする。
      * @callback answerCallback
-     * @param value {Answer} 回答
+     * @param value {Answer|Answers} 回答
      */
 
     /**
@@ -317,12 +350,34 @@ class QaModel {
      */
     ask(text, callback) {
         if (this.classifierId) {
-            classify(this.nlcCreds, this.classifierId, this.db, text, callback);
+            classify(this.nlcCreds, this.classifierId, this.db, text, 1, callback);
         } else {
             getLatestClassifierId(this.nlcCreds, (latestClassifierId) => {
                 this.classifierId = latestClassifierId;
-                classify(this.nlcCreds, this.classifierId, this.db, text, callback);
+                classify(this.nlcCreds, this.classifierId, this.db, text, 1, callback);
             });
+        }
+    }
+
+    /**
+     * クラス分類により複数の回答配列を取得する。件数は1から10の整数で指定する。1件の場合は回答を、2件以上の場合は回答配列を取得する。
+     * @param text {string} 質問
+     * @param count {number} 回答の件数 (1〜10)
+     * @param callback {answerCallback} コールバック
+     */
+    askAnswers(text, count, callback) {
+        if (count < 1 || count > 10) {
+            console.log(`count は 1〜10 までの整数で指定してください。count=${count}`);
+            callback({});
+        } else {
+            if (this.classifierId) {
+                classify(this.nlcCreds, this.classifierId, this.db, text, count, callback);
+            } else {
+                getLatestClassifierId(this.nlcCreds, (latestClassifierId) => {
+                    this.classifierId = latestClassifierId;
+                    classify(this.nlcCreds, this.classifierId, this.db, text, count, callback);
+                });
+            }
         }
     }
 

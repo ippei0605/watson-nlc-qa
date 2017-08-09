@@ -43,6 +43,7 @@ $ npm install watson-nlc-qa
 * [APIs](#apis)
     * [QaModel(cloudantCreds, dbname, nlcCreds, [classifierid])](#qamodelcloudantcreds-dbname-nlccreds-classifierid)
     * [ask(text, callback)](#asktext-callback)
+    * [askAnswers(text, count, callback)](#asktext-count-callback)
     * [askClassName(text, callback)](#askclassnametext-callback)
     * [getAppSettings(callback)](#getappsettingscallback)
     * [createDatabase([callback])](#createdatabasecallback)
@@ -109,6 +110,33 @@ qa.ask('こんにちは', (answer) => {
 |パラメータ     |必須  |型       |説明                                                 |
 | ------------ | --- | ------- | --------------------------------------------------- |
 |text          |Yes  |string   |質問                                                 |
+|callback      |Yes  |function |取得した回答 answer を引数にコールバックする。           |
+
+* 回答 answer
+```json
+{
+  "class_name": "{string} クラス名",
+  "message": "{string} メッセージ",
+  "confidence": "{number} 自信度"
+}
+```
+
+[目次に戻る](#table-of-contents)
+
+---
+
+### askAnswers(text, count, callback)
+テキスト分類で回答配列 [answer] を取得します。取得する回答件数は1から10までの整数で指定できます。回答件数が1件の場合は回答 (配列ではない) を取得します。
+```javascript
+qa.askAnswers('こんにちは', 10, (answers) => {
+    console.log(answers);
+});
+```
+
+|パラメータ     |必須  |型       |説明                                                 |
+| ------------ | --- | ------- | --------------------------------------------------- |
+|text          |Yes  |string   |質問                                                 |
+|count         |Yes  |number   |取得する回答件数 (1〜10)                               |
 |callback      |Yes  |function |取得した回答 answer を引数にコールバックする。           |
 
 * 回答 answer
